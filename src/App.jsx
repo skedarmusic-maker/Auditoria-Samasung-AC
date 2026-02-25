@@ -46,6 +46,8 @@ function App() {
 
   const [pointHistoryData, setPointHistoryData] = useState([])
   const [pointHistoryFile, setPointHistoryFile] = useState(null)
+  const [pointHistorySelectedConsultant, setPointHistorySelectedConsultant] = useState('')
+  const [pointHistorySelectedDate, setPointHistorySelectedDate] = useState('')
   const [manualApprovals, setManualApprovals] = useState({})
 
   const toggleApproval = (row) => {
@@ -63,6 +65,8 @@ function App() {
     try {
       const data = await PointHistoryService.parsePointCsv(file)
       setPointHistoryData(data)
+      setPointHistorySelectedConsultant('')
+      setPointHistorySelectedDate('')
     } catch (e) {
       console.error(e)
       setError("Erro ao ler arquivo de pontos: " + e.message)
@@ -638,10 +642,15 @@ function App() {
                   <span className="font-mono text-xs uppercase tracking-widest">Aguardando Processamento de Dados</span>
                 </div>
               )
-            ) : currentView === 'insights' ? (
-              <InsightsDashboard data={finalProcessedData} />
             ) : currentView === 'resumo' ? null : (
-              <PointHistoryViewer data={pointHistoryData} locations={locations} />
+              <PointHistoryViewer
+                data={pointHistoryData}
+                locations={locations}
+                selectedConsultant={pointHistorySelectedConsultant}
+                setSelectedConsultant={setPointHistorySelectedConsultant}
+                selectedDate={pointHistorySelectedDate}
+                setSelectedDate={setPointHistorySelectedDate}
+              />
             )}
           </div>
         </div>}

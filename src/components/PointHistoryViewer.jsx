@@ -3,11 +3,17 @@ import { MapPin, Navigation, AlertTriangle, Clock, Calendar, User, Search } from
 import MapViewer from './MapViewer';
 import { calculateDistance } from '../services/GoogleMaps';
 
-const PointHistoryViewer = ({ data, locations }) => {
+const PointHistoryViewer = ({
+    data,
+    locations,
+    selectedConsultant,
+    setSelectedConsultant,
+    selectedDate,
+    setSelectedDate
+}) => {
     // data is an array of groups: { consultant, date, points: [...] }
 
     const consultants = useMemo(() => [...new Set(data.map(d => d.consultant))].sort(), [data]);
-    const [selectedConsultant, setSelectedConsultant] = useState(consultants[0] || '');
 
     // Filter available dates for selected consultant
     const availableDates = useMemo(() => {
@@ -21,7 +27,12 @@ const PointHistoryViewer = ({ data, locations }) => {
             });
     }, [data, selectedConsultant]);
 
-    const [selectedDate, setSelectedDate] = useState('');
+    // Initial load sync
+    React.useEffect(() => {
+        if (!selectedConsultant && consultants.length > 0) {
+            setSelectedConsultant(consultants[0]);
+        }
+    }, [consultants, selectedConsultant, setSelectedConsultant]);
 
     // Sync selectedDate when consultant or data changes
     React.useEffect(() => {
@@ -33,7 +44,7 @@ const PointHistoryViewer = ({ data, locations }) => {
         } else {
             setSelectedDate('');
         }
-    }, [selectedConsultant, availableDates, selectedDate]);
+    }, [selectedConsultant, availableDates, selectedDate, setSelectedDate]);
 
     // Get the specific day data
     const currentDayData = useMemo(() => {
