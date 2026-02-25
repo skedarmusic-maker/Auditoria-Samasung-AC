@@ -95,7 +95,7 @@ const options = {
 function MapViewer({ points }) {
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: 'AIzaSyCBdKcUs0z8BCs3B29M_Yevr9EZ_eVZl1M'
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY || ''
     });
 
     React.useEffect(() => {
