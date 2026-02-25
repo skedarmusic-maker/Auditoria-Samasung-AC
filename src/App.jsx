@@ -642,6 +642,8 @@ function App() {
                   <span className="font-mono text-xs uppercase tracking-widest">Aguardando Processamento de Dados</span>
                 </div>
               )
+            ) : currentView === 'insights' ? (
+              <InsightsDashboard data={finalProcessedData} />
             ) : currentView === 'resumo' ? null : (
               <PointHistoryViewer
                 data={pointHistoryData}
