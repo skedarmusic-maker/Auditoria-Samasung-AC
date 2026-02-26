@@ -122,15 +122,25 @@ const cleanPointCoord = (value, type = 'lat') => {
 const processPointData = (rows) => {
     const grouped = {};
 
-    rows.forEach(row => {
-        // Normalize keys to lowercase and trim
-        const normalizedRow = {};
-        Object.keys(row).forEach(k => {
-            normalizedRow[k.toLowerCase().trim()] = row[k];
-        });
+    // Helper to find value across multiple potential keys with fuzzy matching
+    const findValue = (row, keys) => {
+        const rowKeys = Object.keys(row);
+        const normalizeStr = (s) => String(s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_]/g, " ").trim();
 
-        const date = (normalizedRow['data'] || '').trim();
-        const consultant = (normalizedRow['consultor'] || '').trim();
+        for (const key of keys) {
+            const cleanSearch = normalizeStr(key);
+            const foundKey = rowKeys.find(k => normalizeStr(k).includes(cleanSearch));
+            if (foundKey && row[foundKey] && String(row[foundKey]).trim() !== '') {
+                return String(row[foundKey]).trim();
+            }
+        }
+        return null;
+    };
+
+    rows.forEach(row => {
+        const date = findValue(row, ['data', 'data prevista', 'data planejada']);
+        const consultant = findValue(row, ['consultor', 'usuario', 'colaborador', 'nome', 'funcionario']);
+        const rawTime = findValue(row, ['hora', 'horario', 'horário', 'time']);
 
         if (!date || !consultant) return;
 
@@ -145,32 +155,28 @@ const processPointData = (rows) => {
             };
         }
 
-        const lat = cleanPointCoord(normalizedRow['latitude'], 'lat');
-        const lng = cleanPointCoord(normalizedRow['longitude'], 'lng');
+        // The web scraper sometimes extracts latitude under the header 'phone' depending on the HTML structure
+        const rawLat = findValue(row, ['latitude', 'lat', 'phone']);
+        const rawLng = findValue(row, ['longitude', 'lon', 'lng']);
+
+        const lat = cleanPointCoord(rawLat, 'lat');
+        const lng = cleanPointCoord(rawLng, 'lng');
 
         if (lat && lng) {
-            const info = normalizedRow['informações adicionais da coleta'] || normalizedRow['informacoes adicionais da coleta'] || '';
+            const info = findValue(row, ['informacao', 'informacoes', 'informações adicionais', 'info', 'observacao', 'obs']) || '';
 
             // Try multiple common column names for Store/PDV
-            let storeName = (
-                normalizedRow['local'] ||
-                normalizedRow['pdv'] ||
-                normalizedRow['ponto de venda'] ||
-                normalizedRow['nome do pdv'] ||
-                normalizedRow['nome da loja'] ||
-                normalizedRow['cliente'] ||
-                normalizedRow['estabelecimento'] ||
-                normalizedRow['unidade'] ||
-                ''
-            ).trim();
+            let storeName = findValue(row, ['local', 'pdv', 'ponto de venda', 'nome da loja', 'cliente', 'estabelecimento', 'unidade']) || '';
 
             // Smart Search: if still empty, look for ANY column containing keywords
             if (!storeName) {
                 const keywords = ['loja', 'pdv', 'ponto', 'cliente', 'local'];
-                const foundKey = Object.keys(normalizedRow).find(k =>
-                    keywords.some(kw => k.includes(kw)) && normalizedRow[k]
-                );
-                if (foundKey) storeName = String(normalizedRow[foundKey]).trim();
+                const rowKeys = Object.keys(row);
+                const foundKey = rowKeys.find(k => {
+                    const cleanK = String(k).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                    return keywords.some(kw => cleanK.includes(kw)) && row[k];
+                });
+                if (foundKey) storeName = String(row[foundKey]).trim();
             }
 
             // Fallback: Extract from info field
@@ -184,13 +190,16 @@ const processPointData = (rows) => {
                 }
             }
 
+            // Also fuzzy match captureType
+            const captureType = findValue(row, ['forma de captura', 'forma', 'captura']) || '';
+
             const point = {
-                time: (normalizedRow['hora'] || '').trim(),
+                time: (rawTime || '').trim(),
                 lat: lat,
                 lng: lng,
                 info: info,
                 storeName: storeName,
-                captureType: normalizedRow['forma de captura'] || '',
+                captureType: captureType,
                 isCheckIn: info.includes('Execução de atividade'),
                 originalRowIndex: grouped[key].points.length
             };
