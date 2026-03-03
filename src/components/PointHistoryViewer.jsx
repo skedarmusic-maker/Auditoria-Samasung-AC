@@ -19,10 +19,16 @@ const PointHistoryViewer = ({
     const availableDates = useMemo(() => {
         return data
             .filter(d => d.consultant === selectedConsultant)
-            .map(d => d.date)
+            .map(d => {
+                const hasWarning = d.points.some(p => p.distanceFromCheckIn > 900);
+                return {
+                    date: d.date,
+                    hasWarning: hasWarning
+                };
+            })
             .sort((a, b) => {
-                const [d1, m1, y1] = a.split('/').map(Number);
-                const [d2, m2, y2] = b.split('/').map(Number);
+                const [d1, m1, y1] = a.date.split('/').map(Number);
+                const [d2, m2, y2] = b.date.split('/').map(Number);
                 return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1); // Descending
             });
     }, [data, selectedConsultant]);
@@ -38,8 +44,8 @@ const PointHistoryViewer = ({
     React.useEffect(() => {
         if (availableDates.length > 0) {
             // Only update if current selectedDate is NOT in availableDates
-            if (!availableDates.includes(selectedDate)) {
-                setSelectedDate(availableDates[0]);
+            if (!availableDates.find(d => d.date === selectedDate)) {
+                setSelectedDate(availableDates[0].date);
             }
         } else {
             setSelectedDate('');
@@ -235,7 +241,15 @@ const PointHistoryViewer = ({
                             onChange={e => setSelectedDate(e.target.value)}
                             className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs p-2 rounded focus:border-blue-500 outline-none"
                         >
-                            {availableDates.map(d => <option key={d} value={d}>{d}</option>)}
+                            {availableDates.map(d => (
+                                <option
+                                    key={d.date}
+                                    value={d.date}
+                                    className={d.hasWarning ? "text-red-500 font-bold bg-zinc-900" : "text-zinc-300"}
+                                >
+                                    {d.date} {d.hasWarning ? " ⚠️ (Desvios > 900m)" : ""}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>
