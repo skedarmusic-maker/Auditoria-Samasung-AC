@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FileUploader } from './components/FileUploader'
 import { parseCsv, processSolidesData, processUmovmeData } from './services/CsvParser'
-import { fetchLocations, fetchConsultants } from './services/SupabaseClient'
+import { fetchLocations, fetchConsultants, getUploadCache, saveUploadCache } from './services/SupabaseClient'
 import { ReportService } from './services/ReportService'
 import { geocodeAddress, calculateDistance } from './services/GoogleMaps'
 import MapViewer from './components/MapViewer'
@@ -18,6 +18,11 @@ function App() {
   const [locations, setLocations] = useState([])
   const [solidesFile, setSolidesFile] = useState(null)
   const [umovmeFile, setUmovmeFile] = useState(null)
+
+  // RAW Data states for caching parsed JSON
+  const [solidesDataRaw, setSolidesDataRaw] = useState(null)
+  const [umovmeDataRaw, setUmovmeDataRaw] = useState(null)
+
   const [processedData, setProcessedData] = useState([])
   const [loading, setLoading] = useState(false)
   const [geocoding, setGeocoding] = useState(false)
@@ -70,6 +75,10 @@ function App() {
       setPointHistoryData(data)
       setPointHistorySelectedConsultant('')
       setPointHistorySelectedDate('')
+
+      // Salvar em Cache no Supabase
+      saveUploadCache('point_history', file.name, data).catch(e => console.error("Cache Erro:", e));
+
     } catch (e) {
       console.error(e)
       setError("Erro ao ler arquivo de pontos: " + e.message)
@@ -104,23 +113,69 @@ function App() {
   const loadLocations = async () => {
     try {
       setLoading(true)
-      setLoading(true)
       const [locs, consults] = await Promise.all([
         fetchLocations(),
         fetchConsultants()
       ])
       setLocations(locs)
       setConsultantAddresses(consults)
+
+      // Try to load cached CSVs globally
+      const [cachedSolides, cachedUmovme, cachedPoint] = await Promise.all([
+        getUploadCache('solides'),
+        getUploadCache('umovme'),
+        getUploadCache('point_history')
+      ]);
+
+      if (cachedSolides && cachedSolides.parsed_data) {
+        setSolidesFile({ name: cachedSolides.filename || 'Cache Solides.csv' });
+        setSolidesDataRaw(cachedSolides.parsed_data);
+      }
+      if (cachedUmovme && cachedUmovme.parsed_data) {
+        setUmovmeFile({ name: cachedUmovme.filename || 'Cache Umovme.csv' });
+        setUmovmeDataRaw(cachedUmovme.parsed_data);
+      }
+      if (cachedPoint && cachedPoint.parsed_data) {
+        setPointHistoryFile({ name: cachedPoint.filename || 'Cache Point History.csv' });
+        setPointHistoryData(cachedPoint.parsed_data);
+      }
+
     } catch (err) {
-      console.error('Erro ao carregar locais:', err)
-      setError('FALHA DE CONEXÃO: SUPABASE_LOCATIONS_DB')
+      console.error('Erro ao carregar dados inicias/locais:', err)
+      setError('FALHA DE CONEXÃO: SUPABASE')
     } finally {
       setLoading(false)
     }
   }
 
+  // Intercept normal file upload to parse and cache right away
+  const handleUploadSolides = async (file) => {
+    setSolidesFile(file);
+    try {
+      setLoading(true);
+      const parsed = await parseCsv(file);
+      setSolidesDataRaw(parsed);
+      await saveUploadCache('solides', file.name, parsed);
+    } catch (e) { console.error("Cache erro", e); }
+    finally { setLoading(false); }
+  }
+
+  const handleUploadUmovme = async (file) => {
+    setUmovmeFile(file);
+    try {
+      setLoading(true);
+      const parsed = await parseCsv(file);
+      setUmovmeDataRaw(parsed);
+      await saveUploadCache('umovme', file.name, parsed);
+    } catch (e) { console.error("Cache erro", e); }
+    finally { setLoading(false); }
+  }
+
   const handleProcess = async () => {
-    if (!solidesFile || !umovmeFile) return;
+    if (!solidesDataRaw || !umovmeDataRaw) {
+      setError("Por favor, selecione (ou aguarde o carregamento) dos arquivos primeiro.");
+      return;
+    }
 
     setLoading(true)
     setError(null)
@@ -129,13 +184,9 @@ function App() {
     setSelectedConsultant('TODOS')
 
     try {
-      const rawSolides = await parseCsv(solidesFile)
-      const rawUmovme = await parseCsv(umovmeFile)
+      const solidesData = processSolidesData(solidesDataRaw)
+      const umovmeData = processUmovmeData(umovmeDataRaw)
 
-
-
-      const solidesData = processSolidesData(rawSolides)
-      const umovmeData = processUmovmeData(rawUmovme)
 
       // Keep only the EARLIEST entry per Consultant per Date (first check-in of the day only)
       const getEarliestByDate = (list, dateKey, timeKey) => {
