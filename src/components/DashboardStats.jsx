@@ -35,15 +35,15 @@ const DashboardStats = ({ data, limitDistance = 500, limitTime = 15 }) => {
             <div className="bg-zinc-900 border border-zinc-800 p-4 relative group hover:border-zinc-700 transition-all">
                 <div className="flex justify-between items-start mb-2">
                     <div>
-                        <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1">TOTAL REGISTROS</p>
+                        <p className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest mb-1">TOTAL REGISTROS</p>
                         <div className="text-3xl font-bold text-white font-mono tracking-tighter">{total}</div>
                     </div>
-                    <Activity className="text-zinc-700 group-hover:text-zinc-500 transition-colors" size={20} />
+                    <Activity className="text-zinc-500 group-hover:text-zinc-300 transition-colors" size={20} />
                 </div>
                 <div className="w-full h-1 bg-zinc-800 mt-2">
-                    <div className="h-full bg-zinc-600" style={{ width: '100%' }}></div>
+                    <div className="h-full bg-zinc-500" style={{ width: '100%' }}></div>
                 </div>
-                <div className="mt-2 text-[10px] text-zinc-600 font-mono">
+                <div className="mt-2 text-[10px] text-zinc-400 font-mono">
                     AUDITORIA EM CURSO
                 </div>
             </div>
@@ -52,17 +52,17 @@ const DashboardStats = ({ data, limitDistance = 500, limitTime = 15 }) => {
             <div className="bg-zinc-900 border border-zinc-800 p-4 relative group hover:border-emerald-900/50 transition-all">
                 <div className="flex justify-between items-start mb-2">
                     <div>
-                        <p className="text-[10px] font-mono text-emerald-600/70 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <p className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                             <Clock size={10} /> VALIDOS HORÁRIO
                         </p>
                         <div className="text-3xl font-bold text-emerald-400 font-mono tracking-tighter">{validTime}</div>
                     </div>
-                    <CheckCircle className="text-emerald-900/40 group-hover:text-emerald-500/40 transition-colors" size={20} />
+                    <CheckCircle className="text-emerald-800/40 group-hover:text-emerald-500/60 transition-colors" size={20} />
                 </div>
                 <div className="w-full h-1 bg-zinc-800 mt-2">
                     <div className="h-full bg-emerald-500/50" style={{ width: `${validTimePercent}%` }}></div>
                 </div>
-                <div className="mt-2 text-[10px] text-emerald-700/60 font-mono">
+                <div className="mt-2 text-[10px] text-emerald-500 font-mono">
                     TOLERÂNCIA: ±{limitTime} MIN
                 </div>
             </div>
@@ -71,17 +71,17 @@ const DashboardStats = ({ data, limitDistance = 500, limitTime = 15 }) => {
             <div className="bg-zinc-900 border border-zinc-800 p-4 relative group hover:border-red-900/50 transition-all">
                 <div className="flex justify-between items-start mb-2">
                     <div>
-                        <p className="text-[10px] font-mono text-red-600/70 uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <p className="text-[10px] font-mono text-red-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                             <MapPin size={10} /> ERRO DISTÂNCIA
                         </p>
                         <div className="text-3xl font-bold text-red-500 font-mono tracking-tighter">{distError}</div>
                     </div>
-                    <AlertTriangle className="text-red-900/40 group-hover:text-red-500/40 transition-colors" size={20} />
+                    <AlertTriangle className="text-red-800/40 group-hover:text-red-500/60 transition-colors" size={20} />
                 </div>
                 <div className="w-full h-1 bg-zinc-800 mt-2">
                     <div className="h-full bg-red-500/50" style={{ width: `${distErrorPercent}%` }}></div>
                 </div>
-                <div className="mt-2 text-[10px] text-red-700/60 font-mono">
+                <div className="mt-2 text-[10px] text-red-500 font-mono">
                     DIVERGÊNCIA &gt; {limitDistance}m
                 </div>
             </div>

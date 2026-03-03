@@ -58,10 +58,10 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setR
             <div className="flex justify-between items-start mb-4 border-b border-zinc-900 pb-4">
                 <div>
                     <h3 className="font-bold text-zinc-200 text-sm flex items-center gap-2">
-                        <User size={14} className="text-zinc-500" />
+                        <User size={14} className="text-zinc-400" />
                         {item.name}
                     </h3>
-                    <span className="text-[10px] uppercase text-zinc-600 tracking-wider font-mono">{item.total} VISITAS PROCESSADAS</span>
+                    <span className="text-[10px] uppercase text-zinc-400 tracking-wider font-mono">{item.total} VISITAS PROCESSADAS</span>
                 </div>
                 <div className="text-right">
                     <div className={clsx("text-2xl font-black font-mono", colorClass)}>{item.score}%</div>
@@ -78,11 +78,11 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setR
                         <span className="text-[10px] font-bold text-zinc-400 uppercase">Pontualidade</span>
                     </div>
                     <div className="flex justify-between text-[10px] border-b border-zinc-900/50 py-1">
-                        <span className="text-zinc-500">No Prazo</span>
+                        <span className="text-zinc-300">No Prazo</span>
                         <span className="text-emerald-400 font-mono font-bold">{item.timeOk}</span>
                     </div>
                     <div className="flex justify-between text-[10px] border-b border-zinc-900/50 py-1">
-                        <span className="text-zinc-500">Divergente</span>
+                        <span className="text-zinc-300">Divergente</span>
                         <span className="text-red-400 font-mono font-bold">{item.timeError + item.timeWarning}</span>
                     </div>
                 </div>
@@ -94,11 +94,11 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setR
                         <span className="text-[10px] font-bold text-zinc-400 uppercase">Geolocalização</span>
                     </div>
                     <div className="flex justify-between text-[10px] border-b border-zinc-900/50 py-1">
-                        <span className="text-zinc-500">Ok / Viagem</span>
+                        <span className="text-zinc-300">Ok / Viagem</span>
                         <span className="text-emerald-400 font-mono font-bold">{item.geoOk}</span>
                     </div>
                     <div className="flex justify-between text-[10px] py-1">
-                        <span className="text-zinc-500">Divergências</span>
+                        <span className="text-zinc-300">Divergências</span>
                         <span className="text-red-400 font-mono font-bold">{item.geoError}</span>
                     </div>
                 </div>
@@ -138,13 +138,13 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setR
                                         [item.name]: { ...prev[item.name], expanded: !expanded }
                                     }));
                                 }}
-                                className="text-[8px] text-zinc-600 hover:text-zinc-400 uppercase font-mono"
+                                className="text-[8px] text-zinc-400 hover:text-zinc-200 uppercase font-mono"
                             >
                                 {expanded ? '[ Ocultar ]' : '[ Ver Detalhes ]'}
                             </button>
                         </div>
                         {expanded && (
-                            <p className="text-[11px] text-zinc-300 leading-relaxed italic border-l-2 border-purple-500/30 pl-3 py-1">
+                            <p className="text-[11px] text-white leading-relaxed italic border-l-2 border-purple-500/30 pl-3 py-1">
                                 "{summary}"
                             </p>
                         )}
@@ -262,7 +262,7 @@ const ResumoTab = ({ data, pointHistoryData, resumosData, setResumosData }) => {
                 <div className="flex items-center gap-2">
                     <Shield size={14} className="text-purple-400" />
                     <h2 className="text-[11px] font-bold text-zinc-200 uppercase tracking-widest">Relatório Final Personalizado</h2>
-                    <span className="text-[9px] text-zinc-600 font-mono">{data.length} registros analisados</span>
+                    <span className="text-[9px] text-zinc-400 font-mono">{data.length} registros analisados</span>
                 </div>
                 <button
                     onClick={handleExportPDF}
@@ -317,10 +317,10 @@ const ResumoTab = ({ data, pointHistoryData, resumosData, setResumosData }) => {
 
                     {/* Footer for PDF */}
                     <div className="mt-12 pt-8 border-t border-zinc-900 text-center space-y-2 pb-12">
-                        <p className="text-[10px] text-zinc-700 font-mono uppercase tracking-widest">
+                        <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
                             Samsung Auditoria de Campo · Sistema de Conciliação Geográfica v2.5
                         </p>
-                        <p className="text-[8px] text-zinc-800 font-mono italic">
+                        <p className="text-[8px] text-zinc-500 font-mono italic">
                             Este relatório utiliza inteligência artificial generativa para identificar padrões comportamentais baseados em dados de Auditoria (Umovme), Insights e Histórico de Ponto (Solides).
                         </p>
                     </div>
