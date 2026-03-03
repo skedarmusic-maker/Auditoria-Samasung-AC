@@ -50,6 +50,9 @@ function App() {
   const [pointHistorySelectedDate, setPointHistorySelectedDate] = useState('')
   const [manualApprovals, setManualApprovals] = useState({})
 
+  // Persisted state for Resumo Tab AI Summaries to avoid re-fetching when switching tabs
+  const [resumosData, setResumosData] = useState({})
+
   const toggleApproval = (row) => {
     const key = `${row.consultant}_${row.date}_${row.solides.time}`;
     setManualApprovals(prev => ({
@@ -263,6 +266,7 @@ function App() {
       });
 
       setProcessedData(results)
+      setResumosData({}) // Reset AI summaries when crossing new data
 
       // Extract Unique Consultants
       const uniqueConsultants = [...new Set(results.map(r => r.consultant).filter(c => c && c !== 'N/A'))].sort()
@@ -660,7 +664,12 @@ function App() {
         {/* RESUMO FULL-WIDTH VIEW */}
         {currentView === 'resumo' && (
           <div className="border border-zinc-800 bg-zinc-900/30 min-h-[700px] flex flex-col mb-8">
-            <ResumoTab data={finalProcessedData} pointHistoryData={pointHistoryData} />
+            <ResumoTab
+              data={finalProcessedData}
+              pointHistoryData={pointHistoryData}
+              resumosData={resumosData}
+              setResumosData={setResumosData}
+            />
           </div>
         )}
 

@@ -7,11 +7,15 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // --- Consultor Card with AI Summary (Insights Style) ---
-const ConsultantResumoCard = ({ item, idx, allRows, pointRows }) => {
-    const [summary, setSummary] = useState('');
+const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setResumosData }) => {
+    // Determine state from App's persisted data
+    const myData = resumosData[item.name] || {};
+    const summary = myData.summary || '';
+    const initialExpanded = myData.expanded || false;
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(initialExpanded);
 
     const consultantRows = allRows.filter(r => r.consultant === item.name);
     const consultantPoints = pointRows.filter(p => {
@@ -26,7 +30,11 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows }) => {
         setError(null);
         try {
             const text = await generateConsultantSummary(item.name, item, consultantRows, consultantPoints);
-            setSummary(text);
+            // Salvar no estado global
+            setResumosData(prev => ({
+                ...prev,
+                [item.name]: { summary: text, expanded: true }
+            }));
             setExpanded(true);
         } catch (e) {
             setError('Erro ao gerar análise. Verifique a API key.');
@@ -122,7 +130,16 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows }) => {
                                 <Sparkles size={12} className="text-purple-400" />
                                 <span className="text-[9px] font-bold uppercase text-purple-400 tracking-widest">Parecer da Auditoria (IA)</span>
                             </div>
-                            <button onClick={() => setExpanded(!expanded)} className="text-[8px] text-zinc-600 hover:text-zinc-400 uppercase font-mono">
+                            <button
+                                onClick={() => {
+                                    setExpanded(!expanded);
+                                    setResumosData(prev => ({
+                                        ...prev,
+                                        [item.name]: { ...prev[item.name], expanded: !expanded }
+                                    }));
+                                }}
+                                className="text-[8px] text-zinc-600 hover:text-zinc-400 uppercase font-mono"
+                            >
                                 {expanded ? '[ Ocultar ]' : '[ Ver Detalhes ]'}
                             </button>
                         </div>
@@ -143,7 +160,7 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows }) => {
 };
 
 // --- Main ResumoTab Component ---
-const ResumoTab = ({ data, pointHistoryData }) => {
+const ResumoTab = ({ data, pointHistoryData, resumosData, setResumosData }) => {
     const [exportLoading, setExportLoading] = useState(false);
     const reportRef = useRef(null);
 
@@ -291,6 +308,8 @@ const ResumoTab = ({ data, pointHistoryData }) => {
                                     idx={idx}
                                     allRows={data}
                                     pointRows={pointHistoryData || []}
+                                    resumosData={resumosData || {}}
+                                    setResumosData={setResumosData}
                                 />
                             ))}
                         </div>
