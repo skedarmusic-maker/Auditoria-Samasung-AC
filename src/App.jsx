@@ -584,11 +584,11 @@ function App() {
               <>
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 relative group hover:border-zinc-700 transition-colors">
                   <div className="absolute top-0 right-0 p-1 bg-zinc-800 text-[10px] text-zinc-400 font-mono opacity-50">INPUT_SOURCE_A</div>
-                  <FileUploader label="REGISTRO DE PONTO (SOLIDES)" file={solidesFile} onFileSelect={setSolidesFile} color="blue" />
+                  <FileUploader label="REGISTRO DE PONTO (SOLIDES)" file={solidesFile} onFileSelect={handleUploadSolides} color="blue" />
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 relative group hover:border-zinc-700 transition-colors">
                   <div className="absolute top-0 right-0 p-1 bg-zinc-800 text-[10px] text-zinc-400 font-mono opacity-50">INPUT_SOURCE_B</div>
-                  <FileUploader label="ROTEIRO DE VISITAS (UMOVME)" file={umovmeFile} onFileSelect={setUmovmeFile} color="emerald" />
+                  <FileUploader label="ROTEIRO DE VISITAS (UMOVME)" file={umovmeFile} onFileSelect={handleUploadUmovme} color="emerald" />
                 </div>
               </>
             )}
