@@ -6,15 +6,19 @@ export const PointHistoryService = {
         return new Promise((resolve, reject) => {
             Papa.parse(file, {
                 header: true,
-                delimiter: ';', // Force semicolon
-                encoding: 'UTF-8',
-                transformHeader: (h) => h.trim(), // Trim headers to avoid BOM/whitespace issues
                 skipEmptyLines: true,
+                encoding: 'ISO-8859-1', // Better for Brazilian CSVs/Excel
+                transformHeader: (h) => h.trim(),
                 complete: (results) => {
                     try {
+                        if (results.data && results.data.length > 0) {
+                            console.log("POINT CSV - Headers Detectados:", Object.keys(results.data[0]));
+                        }
                         const parsed = processPointData(results.data);
+                        console.log("POINT CSV - Linhas Processadas:", parsed.length);
                         resolve(parsed);
                     } catch (e) {
+                        console.error("Erro no processamento do POINT CSV:", e);
                         reject(e);
                     }
                 },

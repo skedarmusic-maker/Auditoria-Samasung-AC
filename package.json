@@ -19,6 +19,7 @@
     "html2canvas": "^1.4.1",
     "iconv-lite": "^0.7.2",
     "jspdf": "^4.2.0",
+    "lodash.chunk": "^4.2.0",
     "lucide-react": "^0.563.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",
