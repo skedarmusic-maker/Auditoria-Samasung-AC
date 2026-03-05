@@ -139,7 +139,7 @@ export const processUmovmeData = (data) => {
         );
         if (predictedTime) predictedTime = normalizeTime(predictedTime);
 
-        const dateStr = findValue(row, ['Data Prevista', 'Data Planejada', 'Data']);
+        const dateStr = findValue(row, ['Data Prevista', 'Data Planejada', 'Data Previs', 'Data']);
         const local = findValue(row, ['Local', 'Loja', 'Cliente', 'PDV']);
         const endereco = findValue(row,
             ['Endereço', 'Endereços', 'Endereco', 'Enderecos', 'Logradouro', 'Rua'],
@@ -157,5 +157,5 @@ export const processUmovmeData = (data) => {
             predictedTime: predictedTime,
             checkInOriginal: originalCheckIn
         }
-    }).filter(row => row.dataPrevista && (row.checkIn || row.local));
+    }).filter(row => row.dataPrevista && (row.checkIn || row.local || row.endereco));
 };
