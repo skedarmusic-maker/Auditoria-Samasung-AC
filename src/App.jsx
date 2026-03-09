@@ -222,15 +222,25 @@ function App() {
         const n2 = String(name2).toUpperCase().trim();
         if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
         
+        const commonSuffixes = ['NETO', 'JUNIOR', 'FILHO', 'SOBRINHO'];
         const blacklisted = ['DOS', 'DAS', 'DE', 'DA', 'DO'];
+        
         const t1 = n1.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
         const t2 = n2.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
         if (t1.length === 0 || t2.length === 0) return false;
         
-        const shorter = t1.length <= t2.length ? t1 : t2;
-        const longer = t1.length <= t2.length ? t2 : t1;
-        const matchCount = shorter.filter(t => longer.includes(t)).length;
-        return matchCount >= Math.min(1, shorter.length);
+        // Encontrar palavras que batem
+        const matches = t1.filter(t => t2.includes(t));
+        
+        if (matches.length === 0) return false;
+        
+        // Se a ÚNICA palavra que bate for um sufixo comum (como NETO), ignore o match.
+        // Precisa bater pelo menos o nome principal (ex: BIBIANO).
+        if (matches.length === 1 && commonSuffixes.includes(matches[0])) {
+          return false;
+        }
+        
+        return true;
       };
 
       // Match Data
