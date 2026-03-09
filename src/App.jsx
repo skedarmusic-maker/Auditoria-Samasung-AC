@@ -220,27 +220,37 @@ function App() {
         if (!name1 || !name2) return true;
         const n1 = String(name1).toUpperCase().trim();
         const n2 = String(name2).toUpperCase().trim();
+        
+        // Se for idêntico ou um contiver o outro completamente, aceita
         if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
         
-        const commonSuffixes = ['NETO', 'JUNIOR', 'FILHO', 'SOBRINHO'];
+        // Sobrenomes e sufixos muito comuns que não podem ser a única base do match
+        const commonNames = [
+          'SANTOS', 'SILVA', 'SOUZA', 'OLIVEIRA', 'LIMA', 'PEREIRA', 'FERREIRA', 
+          'COSTA', 'RODRIGUES', 'ALMEIDA', 'NASCIMENTO', 'ALVES', 'CARVALHO',
+          'NETO', 'JUNIOR', 'FILHO', 'SOBRINHO'
+        ];
         const blacklisted = ['DOS', 'DAS', 'DE', 'DA', 'DO'];
         
         const t1 = n1.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
         const t2 = n2.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
         if (t1.length === 0 || t2.length === 0) return false;
         
-        // Encontrar palavras que batem
+        // Palavras que batem
         const matches = t1.filter(t => t2.includes(t));
-        
         if (matches.length === 0) return false;
         
-        // Se a ÚNICA palavra que bate for um sufixo comum (como NETO), ignore o match.
-        // Precisa bater pelo menos o nome principal (ex: BIBIANO).
-        if (matches.length === 1 && commonSuffixes.includes(matches[0])) {
-          return false;
-        }
+        // Regra de Ouro: Se o primeiro nome bater, é um sinal forte
+        if (t1[0] === t2[0]) return true;
+
+        // Se o primeiro nome NÃO bater, precisamos de pelo menos 2 palavras batendo 
+        // e que não sejam apenas nomes comuns/sufixos
+        const uniqueMatches = matches.filter(m => !commonNames.includes(m));
         
-        return true;
+        if (uniqueMatches.length >= 1) return true; // Bateu pelo menos um nome "forte"
+        if (matches.length >= 2) return true; // Bateu pelo menos duas palavras quaisquer
+        
+        return false;
       };
 
       // Match Data
