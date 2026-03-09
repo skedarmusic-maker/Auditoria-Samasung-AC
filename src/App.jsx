@@ -193,17 +193,19 @@ function App() {
         const map = new Map();
         list.forEach(item => {
           const date = item[dateKey];
-          const time = item[timeKey];
+          // Use the actual time, fallback to predicted time, or a late default if both missing
+          const time = item[timeKey] || item.predictedTime || '23:59';
           const consultant = item.consultor || 'UNKNOWN';
           const key = `${consultant}_${date}`;
 
-          if (!date || !time) return;
+          if (!date) return;
 
           if (!map.has(key)) {
             map.set(key, item);
           } else {
             const existing = map.get(key);
-            if (time < existing[timeKey]) {
+            const existingTime = existing[timeKey] || existing.predictedTime || '23:59';
+            if (time < existingTime) {
               map.set(key, item);
             }
           }
@@ -214,11 +216,27 @@ function App() {
       const uniqueSolides = getEarliestByDate(solidesData, 'data', 'entrada');
       const uniqueUmovme = getEarliestByDate(umovmeData, 'dataPrevista', 'checkIn');
 
+      const matchConsultant = (name1, name2) => {
+        if (!name1 || !name2) return true;
+        const n1 = String(name1).toUpperCase().trim();
+        const n2 = String(name2).toUpperCase().trim();
+        if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+        
+        const blacklisted = ['DOS', 'DAS', 'DE', 'DA', 'DO'];
+        const t1 = n1.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
+        const t2 = n2.split(/\s+/).filter(t => t.length > 2 && !blacklisted.includes(t));
+        if (t1.length === 0 || t2.length === 0) return false;
+        
+        const shorter = t1.length <= t2.length ? t1 : t2;
+        const longer = t1.length <= t2.length ? t2 : t1;
+        const matchCount = shorter.filter(t => longer.includes(t)).length;
+        return matchCount >= Math.min(1, shorter.length);
+      };
+
       // Match Data
       const results = uniqueSolides.map(ponto => {
         const visit = uniqueUmovme.find(v =>
-          v.dataPrevista === ponto.data &&
-          (v.consultor && ponto.consultor ? v.consultor.toUpperCase().trim() === ponto.consultor.toUpperCase().trim() : true)
+          v.dataPrevista === ponto.data && matchConsultant(v.consultor, ponto.consultor)
         )
 
         let storeLocation = null;

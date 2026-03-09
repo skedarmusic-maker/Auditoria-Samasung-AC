@@ -178,10 +178,17 @@ function MapViewer({ points }) {
             const bounds = new window.google.maps.LatLngBounds();
             let hasValidPoints = false;
 
+            const isValid = (lat, lng) => (
+                Number.isFinite(lat) &&
+                Number.isFinite(lng) &&
+                lat >= -35 && lat <= 6 &&
+                lng >= -75 && lng <= -33
+            );
+
             mapPoints.forEach(pt => {
                 if (pt.effectiveStoreCoords) {
                     const { lat, lng } = pt.effectiveStoreCoords;
-                    if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0) {
+                    if (isValid(lat, lng)) {
                         bounds.extend({ lat, lng });
                         hasValidPoints = true;
                     }
@@ -189,7 +196,7 @@ function MapViewer({ points }) {
                 if (pt.solides?.coords) {
                     const lat = Number(pt.solides.coords.lat);
                     const lng = Number(pt.solides.coords.lng);
-                    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                    if (isValid(lat, lng)) {
                         bounds.extend({ lat, lng });
                         hasValidPoints = true;
                     }
@@ -226,12 +233,28 @@ function MapViewer({ points }) {
                     const storeLat = pt.effectiveStoreCoords?.lat;
                     const storeLng = pt.effectiveStoreCoords?.lng;
 
-                    const solidesLat = Number(pt.solides.coords?.lat);
-                    const solidesLng = Number(pt.solides.coords?.lng);
+                    const solidesLat = Number(pt.solides?.coords?.lat);
+                    const solidesLng = Number(pt.solides?.coords?.lng);
 
-                    const validStore = Number.isFinite(storeLat) && Number.isFinite(storeLng) && storeLat !== 0;
-                    const validSolides = Number.isFinite(solidesLat) && Number.isFinite(solidesLng);
-                    const validHome = pt.consultantHome && Number.isFinite(Number(pt.consultantHome.lat)) && Number.isFinite(Number(pt.consultantHome.lng));
+                    const homeLat = pt.consultantHome ? Number(pt.consultantHome.lat) : null;
+                    const homeLng = pt.consultantHome ? Number(pt.consultantHome.lng) : null;
+
+                    const isValidCoord = (lat, lng) => {
+                        // Strict Brazilian Bounds:
+                        // Lat: approx -34 to 5.5
+                        // Lon: approx -74 to -34
+                        return (
+                            Number.isFinite(lat) &&
+                            Number.isFinite(lng) &&
+                            lat >= -35 && lat <= 6 &&
+                            lng >= -75 && lng <= -33
+                        );
+                    };
+
+                    const validStore = isValidCoord(storeLat, storeLng);
+                    const validSolides = isValidCoord(solidesLat, solidesLng);
+                    const validHome = isValidCoord(homeLat, homeLng);
+
 
                     return (
                         <React.Fragment key={idx}>
