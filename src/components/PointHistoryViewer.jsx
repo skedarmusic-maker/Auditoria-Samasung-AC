@@ -9,7 +9,10 @@ const PointHistoryViewer = ({
     selectedConsultant,
     setSelectedConsultant,
     selectedDate,
-    setSelectedDate
+    setSelectedDate,
+    isClientMode,
+    pointHistoryFile,
+    onFileSelect
 }) => {
     // data is an array of groups: { consultant, date, points: [...] }
 
@@ -187,8 +190,39 @@ const PointHistoryViewer = ({
         return Object.values(stats).sort((a, b) => b.deviations - a.deviations);
     }, [data]);
 
+    // If no data and not client mode, show upload prompt
+    if ((!data || data.length === 0) && !isClientMode) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-6 text-center">
+                <div className="w-24 h-24 border-2 border-dashed border-zinc-700 flex items-center justify-center rounded-full">
+                    <Navigation size={40} className="text-zinc-600" strokeWidth={1} />
+                </div>
+                <div>
+                    <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest mb-2">Nenhum histórico carregado</p>
+                    <p className="text-zinc-600 font-mono text-xs">Carregue o arquivo CSV de histórico de pontos</p>
+                </div>
+                {onFileSelect && (
+                    <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-purple-500 text-purple-400 px-6 py-3 text-xs font-mono uppercase tracking-widest transition-all flex items-center gap-2">
+                        <MapPin size={14} />
+                        Selecionar Arquivo CSV
+                        <input type="file" accept=".csv" className="hidden" onChange={(e) => onFileSelect(e.target.files[0])} />
+                    </label>
+                )}
+            </div>
+        );
+    }
+
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-4">
+                <Search size={48} className="text-zinc-700" strokeWidth={1} />
+                <span className="text-zinc-500 font-mono text-xs uppercase tracking-widest">Nenhum dado disponível</span>
+            </div>
+        );
+    }
+
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-200px)] relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full relative">
 
             {/* COLUMN 1: SUMMARY (CONSULTANT LIST) - 2 COLS */}
             <div className="lg:col-span-2 flex flex-col gap-4 overflow-hidden h-full border-r border-zinc-800 pr-2">

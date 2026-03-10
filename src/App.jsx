@@ -620,8 +620,25 @@ function App() {
 
       <main className="w-full px-6 py-8">
 
-        {/* ACTION GRID - Hidden in Resumo view */}
-        {currentView !== 'resumo' && <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        {/* POINT VIEW - Full-width, no sidebar */}
+        {currentView === 'point' && (
+          <div className="mb-8 h-[calc(100vh-160px)]">
+            <PointHistoryViewer
+              data={pointHistoryData}
+              locations={locations}
+              selectedConsultant={pointHistorySelectedConsultant}
+              setSelectedConsultant={setPointHistorySelectedConsultant}
+              selectedDate={pointHistorySelectedDate}
+              setSelectedDate={setPointHistorySelectedDate}
+              isClientMode={isClientMode}
+              pointHistoryFile={pointHistoryFile}
+              onFileSelect={handlePointHistoryUpload}
+            />
+          </div>
+        )}
+
+        {/* ACTION GRID - Hidden in Resumo and Point views */}
+        {currentView !== 'resumo' && currentView !== 'point' && <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
 
           {/* INPUTS */}
           <div className="lg:col-span-4 space-y-4">
@@ -640,13 +657,7 @@ function App() {
               </>
             )}
 
-            {/* POINT HISTORY UPLOADER */}
-            {!isClientMode && currentView === 'point' && (
-              <div className="bg-zinc-900/50 border border-zinc-800 p-4 relative group hover:border-zinc-700 transition-colors animate-in fade-in slide-in-from-left-4">
-                <div className="absolute top-0 right-0 p-1 bg-zinc-800 text-[10px] text-zinc-400 font-mono opacity-50">INPUT_POINT_HISTORY</div>
-                <FileUploader label="HISTÓRICO DE PONTOS (CSV)" file={pointHistoryFile} onFileSelect={handlePointHistoryUpload} color="purple" />
-              </div>
-            )}
+
 
             {/* CONSULTANT FILTER */}
             {consultants.length > 0 && currentView !== 'point' && (
@@ -736,14 +747,12 @@ function App() {
             )}
           </div>
 
-
-
           {/* MAP & STATS */}
           <div className="lg:col-span-8 flex flex-col gap-6">
             {/* STATS BAR */}
-            {currentView !== 'point' && currentView !== 'resumo' && <DashboardStats data={filteredData} />}
+            <DashboardStats data={filteredData} />
 
-            {/* CONDITIONAL CONTENT: MAP OR INSIGHTS OR POINT */}
+            {/* CONDITIONAL CONTENT: MAP OR INSIGHTS */}
             {currentView === 'audit' ? (
               filteredData.length > 0 ? (
                 <MapViewer points={filteredData} />
@@ -753,17 +762,8 @@ function App() {
                   <span className="font-mono text-xs uppercase tracking-widest">Aguardando Processamento de Dados</span>
                 </div>
               )
-            ) : currentView === 'insights' ? (
+            ) : (
               <InsightsDashboard data={finalProcessedData} />
-            ) : currentView === 'resumo' ? null : (
-              <PointHistoryViewer
-                data={pointHistoryData}
-                locations={locations}
-                selectedConsultant={pointHistorySelectedConsultant}
-                setSelectedConsultant={setPointHistorySelectedConsultant}
-                selectedDate={pointHistorySelectedDate}
-                setSelectedDate={setPointHistorySelectedDate}
-              />
             )}
           </div>
         </div>}
