@@ -38,7 +38,7 @@ const DashboardStats = ({ data, limitDistance = 500, limitTime = 15 }) => {
                         <p className="text-[10px] font-mono text-zinc-300 uppercase tracking-widest mb-1">TOTAL REGISTROS</p>
                         <div className="text-3xl font-bold text-white font-mono tracking-tighter">{total}</div>
                     </div>
-                    <Activity className="text-zinc-500 group-hover:text-zinc-300 transition-colors" size={20} />
+                    <Activity className="text-zinc-400 group-hover:text-zinc-200 transition-colors" size={20} />
                 </div>
                 <div className="w-full h-1 bg-zinc-800 mt-2">
                     <div className="h-full bg-zinc-500" style={{ width: '100%' }}></div>

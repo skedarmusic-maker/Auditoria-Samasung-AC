@@ -538,7 +538,7 @@ function App() {
 
   // STATUS LEGEND COMPONENT
   const StatusLegend = () => (
-    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-zinc-500 font-mono items-center ml-auto">
+    <div className="flex flex-wrap gap-x-4 gap-y-2 text-[10px] text-zinc-400 font-mono items-center ml-auto">
       <div className="flex items-center gap-1.5" title="Distância e locais coincidem (dentro de 500m)"><StatusBadge status="OK" /><span className="hidden xl:inline">Bateu (&lt;500m)</span></div>
       <div className="flex items-center gap-1.5" title="Incompatibilidade de distância (> 500m)"><StatusBadge status="DISTANCE_ERROR" /><span className="hidden xl:inline">Fora (&gt;500m)</span></div>
       <div className="flex items-center gap-1.5" title="Em viagem (Distância > 20km da base)"><StatusBadge status="TRAVEL_OK" /><span className="hidden xl:inline">Viagem Válida</span></div>
@@ -552,6 +552,14 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-blue-500/30">
 
+      {/* MODO CLIENTE BANNER */}
+      {isClientMode && (
+        <div className="w-full bg-emerald-900/40 border-b border-emerald-500/20 text-emerald-400 text-[10px] font-mono tracking-widest uppercase py-2 flex justify-center items-center gap-2">
+          <CheckCircle2 size={12} />
+          Visão do Cliente: Relatório Consolidado
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="border-b border-zinc-800 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-50">
         <div className="w-full px-6 py-4 flex justify-between items-center">
@@ -561,7 +569,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-white uppercase">Auditor<span className="text-blue-500">Samsung</span></h1>
-              <p className="text-[10px] font-mono text-zinc-500 tracking-widest uppercase">Sistema de Conciliação Geográfica v1.0</p>
+              <p className="text-[10px] font-mono text-zinc-400 tracking-widest uppercase">Sistema de Conciliação Geográfica v1.0</p>
             </div>
           </div>
 
@@ -570,7 +578,7 @@ function App() {
             <button
               onClick={() => setCurrentView('audit')}
               className={clsx("px-4 py-1.5 text-xs font-mono uppercase tracking-wider transition-all",
-                currentView === 'audit' ? "bg-zinc-800 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"
+                currentView === 'audit' ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-zinc-200"
               )}
             >
               Auditoria
@@ -578,7 +586,7 @@ function App() {
             <button
               onClick={() => setCurrentView('insights')}
               className={clsx("px-4 py-1.5 text-xs font-mono uppercase tracking-wider transition-all",
-                currentView === 'insights' ? "bg-zinc-800 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"
+                currentView === 'insights' ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-zinc-200"
               )}
             >
               Insights
@@ -586,7 +594,7 @@ function App() {
             <button
               onClick={() => setCurrentView('point')}
               className={clsx("px-4 py-1.5 text-xs font-mono uppercase tracking-wider transition-all",
-                currentView === 'point' ? "bg-zinc-800 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"
+                currentView === 'point' ? "bg-zinc-800 text-white font-bold" : "text-zinc-400 hover:text-zinc-200"
               )}
             >
               Point
@@ -695,7 +703,9 @@ function App() {
                       try {
                         setLoading(true);
                         await ReportService.saveReport(processedData, consultants);
-                        alert("Relatório Enviado!");
+                        const linkUrl = window.location.origin + '?mode=client';
+                        await navigator.clipboard.writeText(linkUrl);
+                        alert("Relatório Enviado com sucesso!\n\nLink copiado para a área de transferência:\n" + linkUrl);
                       } catch (e) {
                         alert("Erro ao enviar: " + e.message);
                       } finally {
@@ -706,7 +716,7 @@ function App() {
                     className="col-span-1 bg-emerald-900/50 hover:bg-emerald-800 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500 p-4 font-bold tracking-widest text-xs uppercase disabled:opacity-20 transition-all flex justify-center items-center gap-2"
                   >
                     <Send size={14} />
-                    ENVIAR CLIENTE
+                    PUBLICAR & COPIAR LINK
                   </button>
                 </>
               )}

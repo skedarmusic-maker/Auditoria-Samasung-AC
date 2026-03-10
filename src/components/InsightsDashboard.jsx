@@ -70,12 +70,12 @@ const InsightsDashboard = ({ data }) => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-1 opacity-20"><User size={48} /></div>
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Total Consultores</p>
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-400 mb-1">Total Consultores</p>
                     <p className="text-2xl font-bold text-white">{consultantMetrics.length}</p>
                 </div>
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-1 opacity-20"><CheckCircle size={48} /></div>
-                    <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Total Visitas</p>
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-400 mb-1">Total Visitas</p>
                     <p className="text-2xl font-bold text-blue-400">{data.length}</p>
                 </div>
             </div>
@@ -104,11 +104,11 @@ const InsightsDashboard = ({ data }) => {
                                 <div className="flex justify-between items-start mb-4 border-b border-zinc-900 pb-4">
                                     <div>
                                         <h3 className="font-bold text-zinc-200 text-sm">{c.name}</h3>
-                                        <span className="text-[10px] uppercase text-zinc-600 tracking-wider font-mono">{c.total} VISITAS PROCESSADAS</span>
+                                        <span className="text-[10px] uppercase text-zinc-400 tracking-wider font-mono">{c.total} VISITAS PROCESSADAS</span>
                                     </div>
                                     <div className="text-right">
                                         <div className={clsx("text-2xl font-black font-mono", scoreColor)}>{score}%</div>
-                                        <div className="text-[9px] text-zinc-600 uppercase">Compliance Score</div>
+                                        <div className="text-[9px] text-zinc-400 uppercase">Compliance Score</div>
                                     </div>
                                 </div>
 
@@ -122,15 +122,15 @@ const InsightsDashboard = ({ data }) => {
                                             <span className="text-[10px] font-bold text-zinc-400 uppercase">Pontualidade (Roteiro)</span>
                                         </div>
                                         <div className="flex justify-between text-xs border-b border-zinc-900 py-1">
-                                            <span className="text-zinc-500">No Prazo (0-15m)</span>
+                                            <span className="text-zinc-300">No Prazo (0-15m)</span>
                                             <span className="text-emerald-400 font-mono">{c.timeOk}</span>
                                         </div>
                                         <div className="flex justify-between text-xs border-b border-zinc-900 py-1">
-                                            <span className="text-zinc-500">Atraso Leve (16-30m)</span>
+                                            <span className="text-zinc-300">Atraso Leve (16-30m)</span>
                                             <span className="text-amber-400 font-mono">{c.timeWarning}</span>
                                         </div>
                                         <div className="flex justify-between text-xs py-1">
-                                            <span className="text-zinc-500">Crítico ({'>'}30m)</span>
+                                            <span className="text-zinc-300">Crítico ({'>'}30m)</span>
                                             <span className="text-red-400 font-mono font-bold">{c.timeError}</span>
                                         </div>
                                     </div>
@@ -142,11 +142,11 @@ const InsightsDashboard = ({ data }) => {
                                             <span className="text-[10px] font-bold text-zinc-400 uppercase">Geolocalização</span>
                                         </div>
                                         <div className="flex justify-between text-xs border-b border-zinc-900 py-1">
-                                            <span className="text-zinc-500">No Local</span>
+                                            <span className="text-zinc-300">No Local</span>
                                             <span className="text-emerald-400 font-mono">{c.geoOk}</span>
                                         </div>
                                         <div className="flex justify-between text-xs py-1">
-                                            <span className="text-zinc-500">Fora do Raio</span>
+                                            <span className="text-zinc-300">Fora do Raio</span>
                                             <span className="text-red-400 font-mono">{c.geoError}</span>
                                         </div>
                                     </div>

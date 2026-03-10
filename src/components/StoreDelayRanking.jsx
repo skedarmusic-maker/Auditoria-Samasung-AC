@@ -116,26 +116,26 @@ const StoreDelayRanking = ({ data }) => {
                                 )}>#{idx + 1}</span>
                                 <div className="flex flex-col overflow-hidden">
                                     <span className="text-[10px] text-zinc-200 font-bold truncate group-hover:text-white transition-colors">{item.name}</span>
-                                    <span className="text-[8px] text-zinc-500 truncate">{item.uniqueStores} loja(s) com atrasos</span>
+                                    <span className="text-[8px] text-zinc-400 truncate">{item.uniqueStores} loja(s) com atrasos</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-3">
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex items-center gap-1" title="Quantidade de Atrasos (>15min)">
-                                        <span className="text-[7px] text-zinc-600 font-mono uppercase">QTD</span>
+                                        <span className="text-[7px] text-zinc-400 font-mono uppercase">QTD</span>
                                         <span className="text-[10px] font-bold text-red-400">{item.count}</span>
                                         <AlertTriangle size={8} className="text-red-500/50" />
                                     </div>
                                     <div className="flex items-center gap-1" title="Média de Tempo de Atraso">
-                                        <span className="text-[7px] text-zinc-600 font-mono uppercase">MÉD</span>
-                                        <span className="text-[9px] font-mono text-zinc-400">{item.avgDelay}m</span>
-                                        <Clock size={8} className="text-zinc-600" />
+                                        <span className="text-[7px] text-zinc-400 font-mono uppercase">MÉD</span>
+                                        <span className="text-[9px] font-mono text-zinc-300">{item.avgDelay}m</span>
+                                        <Clock size={8} className="text-zinc-500" />
                                     </div>
                                 </div>
                                 {expandedNetwork === item.name ?
                                     <ChevronUp size={14} className="text-orange-500" /> :
-                                    <ChevronDown size={14} className="text-zinc-500" />
+                                    <ChevronDown size={14} className="text-zinc-400" />
                                 }
                             </div>
                         </div>
@@ -164,7 +164,7 @@ const StoreDelayRanking = ({ data }) => {
                     </div>
                 ))}
             </div>
-            <div className="p-2 border-t border-zinc-800 bg-zinc-900/50 text-[9px] text-center text-zinc-500 font-mono uppercase">
+            <div className="p-2 border-t border-zinc-800 bg-zinc-900/50 text-[9px] text-center text-zinc-400 font-mono uppercase">
                 Atrasos {'>'} 15min
             </div>
         </div>

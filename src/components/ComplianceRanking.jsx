@@ -83,7 +83,7 @@ const ComplianceRanking = ({ data }) => {
                         <div className="flex items-center gap-3 overflow-hidden">
                             <span className={clsx(
                                 "text-[10px] font-mono font-bold w-4 text-center opacity-70",
-                                idx < 3 ? "text-yellow-500" : "text-zinc-500"
+                                idx < 3 ? "text-yellow-500" : "text-zinc-400"
                             )}>#{idx + 1}</span>
                             <div className="flex flex-col overflow-hidden">
                                 <span className="text-[10px] text-zinc-200 font-bold truncate group-hover:text-white transition-colors">{item.name}</span>
@@ -106,8 +106,8 @@ const ComplianceRanking = ({ data }) => {
                             )}>
                                 {item.score}
                             </span>
-                            <span className="text-[8px] text-zinc-500 uppercase tracking-wider">SCORE</span>
-                            <span className="text-[8px] text-zinc-500 font-mono mt-0.5 font-bold" title="Visitas Válidas / Total">
+                            <span className="text-[8px] text-zinc-400 uppercase tracking-wider">SCORE</span>
+                            <span className="text-[8px] text-zinc-300 font-mono mt-0.5 font-bold" title="Visitas Válidas / Total">
                                 {item.timeOk + item.timeWarning + item.timeError}/{item.total}
                             </span>
                         </div>
@@ -115,7 +115,7 @@ const ComplianceRanking = ({ data }) => {
                 ))}
             </div>
 
-            <div className="p-2 border-t border-zinc-800 bg-zinc-900/50 text-[9px] text-center text-zinc-500 font-mono uppercase">
+            <div className="p-2 border-t border-zinc-800 bg-zinc-900/50 text-[9px] text-center text-zinc-400 font-mono uppercase">
                 Baseado em Pontualidade + Geo
             </div>
         </div >
