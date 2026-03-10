@@ -94,6 +94,7 @@ function App() {
       if (report) {
         setProcessedData(report.processedData || [])
         setConsultants(report.consultants || [])
+        setPointHistoryData(report.pointHistoryData || [])
         setReportTitle(report.generatedAt)
         // Load locations for map context if needed, but not strictly required if coords in data
         fetchLocations().then(setLocations).catch(e => console.warn(e))
@@ -686,38 +687,45 @@ function App() {
                 </button>
               )}
 
-              {filteredData.length > 0 && !isClientMode && (
+              {currentView === 'audit' && !isClientMode && (
                 <>
-                  <button
-                    onClick={handleGeocode}
-                    disabled={geocoding}
-                    className="col-span-1 bg-zinc-800 hover:bg-zinc-700 text-purple-400 border border-purple-500/20 hover:border-purple-500 p-4 font-bold tracking-widest text-xs uppercase disabled:opacity-20 transition-all flex justify-center items-center gap-2"
-                  >
-                    {geocoding ? <Loader2 className="animate-spin" /> : <MapPin />}
-                    GEOCODIFICAR & CALCULAR
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const confirm = window.confirm("Deseja publicar este relatório para o Cliente?");
-                      if (!confirm) return;
-                      try {
-                        setLoading(true);
-                        await ReportService.saveReport(processedData, consultants);
-                        const linkUrl = window.location.origin + '?mode=client';
-                        await navigator.clipboard.writeText(linkUrl);
-                        alert("Relatório Enviado com sucesso!\n\nLink copiado para a área de transferência:\n" + linkUrl);
-                      } catch (e) {
-                        alert("Erro ao enviar: " + e.message);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    className="col-span-1 bg-emerald-900/50 hover:bg-emerald-800 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500 p-4 font-bold tracking-widest text-xs uppercase disabled:opacity-20 transition-all flex justify-center items-center gap-2"
-                  >
-                    <Send size={14} />
-                    PUBLICAR & COPIAR LINK
-                  </button>
+                  {filteredData.length > 0 && (
+                    <button
+                      onClick={handleGeocode}
+                      disabled={geocoding}
+                      className="col-span-1 bg-zinc-800 hover:bg-zinc-700 text-purple-400 border border-purple-500/20 hover:border-purple-500 p-4 font-bold tracking-widest text-xs uppercase disabled:opacity-20 transition-all flex justify-center items-center gap-2"
+                    >
+                      {geocoding ? <Loader2 className="animate-spin" /> : <MapPin />}
+                      GEOCODIFICAR & CALCULAR
+                    </button>
+                  )}
+                  {(filteredData.length > 0 || pointHistoryData.length > 0) && (
+                    <button
+                      onClick={async () => {
+                        const confirm = window.confirm("Deseja publicar este relatório para o Cliente?");
+                        if (!confirm) return;
+                        try {
+                          setLoading(true);
+                          await ReportService.saveReport(processedData, consultants, pointHistoryData);
+                          const linkUrl = window.location.origin + '?mode=client';
+                          await navigator.clipboard.writeText(linkUrl);
+                          alert("Relatório Enviado com sucesso!\n\nLink copiado para a área de transferência:\n" + linkUrl);
+                        } catch (e) {
+                          alert("Erro ao enviar: " + e.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={loading}
+                      className={clsx(
+                        filteredData.length > 0 ? "col-span-1" : "col-span-2",
+                        "bg-emerald-900/50 hover:bg-emerald-800 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500 p-4 font-bold tracking-widest text-xs uppercase disabled:opacity-20 transition-all flex justify-center items-center gap-2"
+                      )}
+                    >
+                      <Send size={14} />
+                      PUBLICAR & COPIAR LINK
+                    </button>
+                  )}
                 </>
               )}
             </div>

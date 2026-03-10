@@ -4,7 +4,7 @@ export const ReportService = {
 
     // Save a new report (Admin Only)
     // We store the entire processed state + consultant list
-    saveReport: async (processedData, consultants) => {
+    saveReport: async (processedData, consultants, pointHistoryData = []) => {
         try {
             const report = {
                 created_at: new Date(),
@@ -12,6 +12,7 @@ export const ReportService = {
                 report_data: {
                     processedData,
                     consultants,
+                    pointHistoryData,
                     generatedAt: new Date().toISOString()
                 }
             };
