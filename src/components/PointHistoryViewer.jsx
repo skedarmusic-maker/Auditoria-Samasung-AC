@@ -227,14 +227,14 @@ const PointHistoryViewer = ({
                 </div>
             </div>
 
-            {/* COLUMN 2: DETAILS (FILTERS & LOGS) - 3 COLS */}
-            <div className="lg:col-span-3 flex flex-col gap-4 overflow-hidden h-full">
+            {/* COLUMN 2: DETAILS (FILTERS & LOGS) - 2 COLS */}
+            <div className="hidden lg:flex lg:col-span-2 flex-col gap-4 overflow-hidden h-full">
 
                 {/* FILTERS */}
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 space-y-4">
                     <div>
-                        <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 block flex items-center gap-2">
-                            <Calendar size={12} /> Data Selecionada
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 flex items-center gap-2">
+                            <Calendar size={12} /> Data
                         </label>
                         <select
                             value={selectedDate}
@@ -247,7 +247,7 @@ const PointHistoryViewer = ({
                                     value={d.date}
                                     className={d.hasWarning ? "text-red-500 font-bold bg-zinc-900" : "text-zinc-300"}
                                 >
-                                    {d.date} {d.hasWarning ? " ⚠️ (Desvios > 900m)" : ""}
+                                    {d.date} {d.hasWarning ? " ⚠️" : ""}
                                 </option>
                             ))}
                         </select>
@@ -259,21 +259,21 @@ const PointHistoryViewer = ({
                     <div className="p-3 bg-red-950/20 border-b border-red-900/30 flex justify-between items-center">
                         <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
                             <AlertTriangle size={14} />
-                            Desvios Críticos ({deviations.length})
+                            Desvios ({deviations.length})
                         </h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-zinc-700">
                         {deviations.length === 0 ? (
                             <div className="text-center p-8 text-zinc-600 text-xs">
-                                Nenhum desvio detectado durante as janelas de visita.
+                                Nenhum desvio
                             </div>
                         ) : (
                             deviations.map((dev, idx) => (
                                 <div key={idx} className="bg-red-950/10 border border-red-900/30 p-2 rounded hover:bg-red-900/20 transition-colors">
                                     <div className="flex justify-between items-center mb-1">
                                         <span className="text-red-300 font-mono font-bold text-xs">{dev.time}</span>
-                                        <span className="text-[10px] text-zinc-500">
-                                            {dev.relatedStoreName || 'Desconhecida'}
+                                        <span className="text-[10px] text-zinc-500 truncate max-w-[80px]" title={dev.relatedStoreName}>
+                                            {dev.relatedStoreName || 'Desc.'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center">
@@ -282,7 +282,7 @@ const PointHistoryViewer = ({
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-zinc-500 truncate" title={dev.info}>
-                                        {dev.info || 'Sem informações adicionais'}
+                                        {dev.info || 'Sem informações'}
                                     </p>
                                 </div>
                             ))
@@ -293,9 +293,9 @@ const PointHistoryViewer = ({
                 {/* CHECK-INS LIST */}
                 <div className="bg-zinc-900 border border-zinc-800 flex flex-col overflow-hidden h-1/3">
                     <div className="p-3 bg-emerald-950/20 border-b border-emerald-900/30 flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                            <MapPin size={14} />
-                            Janelas de Visita ({currentDayData?.windows?.length || 0} Lojas)
+                        <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                            <MapPin size={12} />
+                            Janelas ({currentDayData?.windows?.length || 0})
                         </h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-2">
@@ -307,16 +307,10 @@ const PointHistoryViewer = ({
                                         <span className={`font-mono font-bold text-xs ${isStart ? 'text-emerald-300' : 'text-zinc-400'}`}>
                                             {ci.time}
                                         </span>
-                                        <span className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded ${isStart ? 'bg-emerald-900/30 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}`}>
-                                            {isStart ? 'INÍCIO' : 'FIM'}
-                                        </span>
                                     </div>
                                     <div className="mt-1 text-[10px] font-bold text-zinc-300 uppercase truncate" title={ci.storeName || ci.info}>
-                                        {ci.storeName || (ci.info && ci.info.length > 5 ? ci.info : 'Loja não identificada')}
+                                        {ci.storeName || (ci.info && ci.info.length > 5 ? ci.info : 'Desconhecida')}
                                     </div>
-                                    <p className="text-[10px] text-zinc-500 truncate">
-                                        {ci.lat.toFixed(5)}, {ci.lng.toFixed(5)}
-                                    </p>
                                 </div>
                             );
                         })}
@@ -324,8 +318,8 @@ const PointHistoryViewer = ({
                 </div>
             </div>
 
-            {/* COLUMN 3: RIGHT MAIN MAP - 7 COLS */}
-            <div className="lg:col-span-7 bg-zinc-900 border border-zinc-800 relative">
+            {/* COLUMN 3: RIGHT MAIN MAP - 8 COLS */}
+            <div className="col-span-1 lg:col-span-8 bg-zinc-900 border border-zinc-800 relative min-h-[500px] lg:min-h-0">
                 <MapViewer points={mapDataPoints} />
 
                 {/* OVERLAY LEGEND */}
