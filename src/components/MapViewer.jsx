@@ -220,7 +220,7 @@ function MapViewer({ points }) {
     );
 
     return (
-        <div className="h-[600px] w-full border border-zinc-800 bg-zinc-900 relative group">
+        <div className="h-full min-h-[500px] w-full border border-zinc-800 bg-zinc-900 relative group">
             <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={center}
