@@ -44,9 +44,10 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('mode') === 'client') {
+      const account = params.get('account')
       setIsClientMode(true)
       setCurrentView('insights')
-      loadClientReport()
+      loadClientReport(account)
     } else {
       loadLocations()
     }
@@ -90,21 +91,24 @@ function App() {
     }
   }
 
-  const loadClientReport = async () => {
+  const loadClientReport = async (account = null) => {
     try {
       setLoading(true)
-      const report = await ReportService.getLatestReport()
+      const report = await ReportService.getLatestReport(account)
       if (report) {
         setProcessedData(report.processedData || [])
         setConsultants(report.consultants || [])
         setPointHistoryData(report.pointHistoryData || [])
         setReportTitle(report.generatedAt)
-        if (report.conta) setSelectedAccount(report.conta)
-        // Load locations for map context if needed, but not strictly required if coords in data
-        fetchLocations(report.conta).then(setLocations).catch(e => console.warn(e))
-        fetchConsultants(report.conta).then(setConsultantAddresses).catch(e => console.warn(e))
+        
+        const finalAccount = report.conta || account || 'SAMSUNG'
+        setSelectedAccount(finalAccount)
+        
+        // Load locations for map context
+        fetchLocations(finalAccount).then(setLocations).catch(e => console.warn(e))
+        fetchConsultants(finalAccount).then(setConsultantAddresses).catch(e => console.warn(e))
       } else {
-        setError('Nenhum relatório encontrado.')
+        setError('Nenhum relatório encontrado para esta conta.')
       }
     } catch (e) {
       console.error(e)
@@ -749,9 +753,9 @@ function App() {
                         try {
                           setLoading(true);
                           await ReportService.saveReport(processedData, consultants, pointHistoryData, selectedAccount);
-                          const linkUrl = window.location.origin + '?mode=client';
+                          const linkUrl = `${window.location.origin}?mode=client&account=${selectedAccount}`;
                           await navigator.clipboard.writeText(linkUrl);
-                          alert("Relatório Enviado com sucesso!\n\nLink copiado para a área de transferência:\n" + linkUrl);
+                          alert(`Relatório [${selectedAccount}] Enviado com sucesso!\n\nLink exclusivo copiado:\n` + linkUrl);
                         } catch (e) {
                           alert("Erro ao enviar: " + e.message);
                         } finally {
