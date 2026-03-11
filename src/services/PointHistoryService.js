@@ -148,6 +148,14 @@ const processPointData = (rows) => {
 
         if (!date || !consultant) return;
 
+        // FILTRO: Ignorar Sábado e Domingo
+        const dateParts = date.split('/');
+        if (dateParts.length === 3) {
+            const [d, m, y] = dateParts.map(Number);
+            const dayOfWeek = new Date(y, m - 1, d).getDay(); // 0 = Domingo, 6 = Sábado
+            if (dayOfWeek === 0 || dayOfWeek === 6) return;
+        }
+
         const key = `${consultant}|${date}`;
 
         if (!grouped[key]) {
@@ -243,21 +251,32 @@ const processPointData = (rows) => {
         }
         group.windows = windows;
 
-        // 3. Classify each point
+        // 3. Classify each point based on Windows
         group.points.forEach(p => {
-            if (p.isCheckIn) {
-                p.status = 'CHECKIN_MARKER'; // New status for the anchor points
+            // Find if this point is exactly the Window Start or End object
+            const windowStart = windows.find(w => w.start === p);
+            const windowEnd = windows.find(w => w.end === p);
+
+            if (windowStart) {
+                p.status = 'CHECKIN_MARKER'; // Green Circle
                 p.distanceFromCheckIn = 0;
+                return;
+            }
+
+            if (windowEnd) {
+                p.status = 'CHECKOUT_MARKER'; // New status for end of visit
+                p.distanceFromCheckIn = calculateDistance(p.lat, p.lng, windowEnd.start.lat, windowEnd.start.lng);
+                p.relatedCheckInTime = windowEnd.start.time;
+                p.relatedStoreName = windowEnd.start.storeName;
+                p.checkInCoords = windowEnd.storeLocation;
                 return;
             }
 
             // Find if point falls into any window
             const activeWindow = windows.find(w => {
-                // Logic: time >= start.time AND (time <= end.time OR end is null)
-                // Need generic time compare helper
                 const tP = timeToSeconds(p.time);
                 const tStart = timeToSeconds(w.start.time);
-                const tEnd = w.end ? timeToSeconds(w.end.time) : 86400; // End of day if open
+                const tEnd = w.end ? timeToSeconds(w.end.time) : 86400; 
 
                 return tP >= tStart && tP <= tEnd;
             });
@@ -268,17 +287,17 @@ const processPointData = (rows) => {
                 p.distanceFromCheckIn = dist;
                 p.relatedCheckInTime = activeWindow.storeLocation.time;
                 p.relatedStoreName = activeWindow.storeLocation.storeName;
-                p.checkInCoords = activeWindow.storeLocation; // Add this for the viewer to draw lines
+                p.checkInCoords = activeWindow.storeLocation; 
 
                 if (dist > 500) {
                     p.isDeviation = true;
                     p.status = 'DEVIATION_CRITICAL'; // Red
                 } else {
-                    p.status = 'IN_STORE'; // Green (Working correct)
+                    p.status = 'IN_STORE'; // Green Arrow
                 }
             } else {
                 // OUTSIDE ANY VISIT (TRAVEL)
-                p.status = 'TRAVEL'; // Grey/Blue (Ignore)
+                p.status = 'TRAVEL'; 
                 p.distanceFromCheckIn = null;
             }
         });

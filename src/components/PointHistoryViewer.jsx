@@ -7,6 +7,7 @@ import { FileUploader } from './FileUploader';
 const PointHistoryViewer = ({
     data,
     locations,
+    consultantAddresses,
     selectedConsultant,
     setSelectedConsultant,
     selectedDate,
@@ -15,13 +16,23 @@ const PointHistoryViewer = ({
     pointHistoryFile,
     onFileSelect
 }) => {
-    // data is an array of groups: { consultant, date, points: [...] }
+    // FILTRO GLOBAL: Ignorar Sábados e Domingos
+    const filteredData = useMemo(() => {
+        return (data || []).filter(group => {
+            if (!group.date) return false;
+            const parts = group.date.split('/');
+            if (parts.length !== 3) return true; 
+            const [d, m, y] = parts.map(Number);
+            const dow = new Date(y, m - 1, d).getDay();
+            return dow !== 0 && dow !== 6; // 0 = Domingo, 6 = Sábado
+        });
+    }, [data]);
 
-    const consultants = useMemo(() => [...new Set(data.map(d => d.consultant))].sort(), [data]);
+    const consultants = useMemo(() => [...new Set(filteredData.map(d => d.consultant))].sort(), [filteredData]);
 
     // Filter available dates for selected consultant
     const availableDates = useMemo(() => {
-        return data
+        return filteredData
             .filter(d => d.consultant === selectedConsultant)
             .map(d => {
                 const hasWarning = d.points.some(p => p.distanceFromCheckIn > 900);
@@ -58,44 +69,78 @@ const PointHistoryViewer = ({
 
     // Get the specific day data
     const currentDayData = useMemo(() => {
-        return data.find(d => d.consultant === selectedConsultant && d.date === selectedDate);
-    }, [data, selectedConsultant, selectedDate]);
+        return filteredData.find(d => d.consultant === selectedConsultant && d.date === selectedDate);
+    }, [filteredData, selectedConsultant, selectedDate]);
 
-    // Prepare deviations list
-    const deviations = useMemo(() => {
-        if (!currentDayData) return [];
-        return currentDayData.points.filter(p => p.status === 'DEVIATION_CRITICAL');
-    }, [currentDayData]);
-
-    // Prepare check-ins list with store name lookup
-    const checkIns = useMemo(() => {
+    // 1. Resolve store names for all check-ins (Anchor Points)
+    const resolvedCheckIns = useMemo(() => {
         if (!currentDayData) return [];
         return currentDayData.points
             .filter(p => p.status === 'CHECKIN_MARKER')
             .map(p => {
-                // If we have a storeName from CSV, keep it. 
-                // BUT if it's empty or generic, try to find the nearest store in Supabase "locations"
                 let finalStoreName = p.storeName;
+                let isResolved = false;
 
-                if ((!finalStoreName || finalStoreName.length < 3) && locations && locations.length > 0) {
-                    // Find nearest store (within 1km tolerance)
-                    let minInfo = { name: null, dist: 1000 }; // 1km max tolerance for lookup
+                // Try to resolve if name is missing, too short (like codes), numeric, or just "Execução de atividade"
+                const nameLower = (finalStoreName || '').toLowerCase();
+                const isGeneric = !finalStoreName || finalStoreName.length <= 4 || /^\d+$/.test(finalStoreName) || nameLower.includes('execução') || nameLower.includes('execucao') || nameLower.includes('tracking');
+
+                if (isGeneric && locations && locations.length > 0) {
+                    let minInfo = { name: null, dist: 1500 }; // 1.5km tolerance
 
                     locations.forEach(loc => {
                         const dist = calculateDistance(p.lat, p.lng, Number(loc.latitude), Number(loc.longitude));
-                        if (dist < minInfo.dist) {
-                            minInfo = { name: loc.bandeira || loc.nome_pdv, dist: dist };
+                        if (dist !== null && dist < minInfo.dist) {
+                            minInfo = { name: loc.nome_pdv || loc.bandeira, dist: dist };
                         }
                     });
 
                     if (minInfo.name) {
                         finalStoreName = minInfo.name;
+                        isResolved = true;
                     }
                 }
 
-                return { ...p, storeName: finalStoreName };
+                return { 
+                    ...p, 
+                    storeName: finalStoreName || (p.info && p.info.length > 10 ? p.info : 'Loja Desconhecida'),
+                    isResolved 
+                };
             });
     }, [currentDayData, locations]);
+
+    // Prepare deviations list with resolved store names
+    const deviations = useMemo(() => {
+        if (!currentDayData || resolvedCheckIns.length === 0) return [];
+        return currentDayData.points
+            .filter(p => p.status === 'DEVIATION_CRITICAL')
+            .map(p => {
+                // Find the resolved check-in that match the relatedCheckInTime
+                const resolved = resolvedCheckIns.find(rc => rc.time === p.relatedCheckInTime);
+                return {
+                    ...p,
+                    relatedStoreName: resolved?.storeName || p.relatedStoreName
+                };
+            });
+    }, [currentDayData, resolvedCheckIns]);
+
+    // Prepare check-ins list for sidebar
+    const checkIns = resolvedCheckIns;
+
+    // Find Home Address for current consultant
+    const currentConsultantHome = useMemo(() => {
+        if (!selectedConsultant || !consultantAddresses) return null;
+        // Case-insensitive match or inclusion
+        const name = selectedConsultant.toUpperCase();
+        const found = consultantAddresses.find(c => {
+            const cName = (c.nome || '').toUpperCase();
+            return cName === name || cName.includes(name) || name.includes(cName);
+        });
+        if (found && found.latitude) {
+            return { lat: Number(found.latitude), lng: Number(found.longitude), address: found.endereco };
+        }
+        return null;
+    }, [selectedConsultant, consultantAddresses]);
 
     // Format for MapViewer
     // MapViewer expects an array of "rows" where each row has { solides, storeLocation, distance, ... }
@@ -109,11 +154,14 @@ const PointHistoryViewer = ({
             let customLineColor = null;
 
             if (p.status === 'CHECKIN_MARKER') {
+                // Find resolved data for this check-in
+                const resolved = resolvedCheckIns.find(rc => rc.time === p.time);
+                
                 // The Check-In Anchor (Green Circle)
                 storeLocation = {
                     latitude: p.lat,
                     longitude: p.lng,
-                    nome_pdv: `PONTO ZERO (CHECK-IN) - ${p.time}`,
+                    nome_pdv: resolved?.storeName || `PONTO ZERO - ${p.time}`,
                     code: 'CHECKIN'
                 };
                 return {
@@ -123,7 +171,32 @@ const PointHistoryViewer = ({
                     storeLocation: storeLocation,
                     distance: 0,
                     status: 'OK',
-                    customType: 'CHECKIN'
+                    customType: 'CHECKIN',
+                    consultantHome: currentConsultantHome
+                };
+            }
+
+            if (p.status === 'CHECKOUT_MARKER') {
+                // Find resolved data for the related check-in
+                const resolved = resolvedCheckIns.find(rc => rc.time === p.relatedCheckInTime);
+                const storeNameToDisplay = resolved?.storeName || p.relatedStoreName || 'Loja Desconhecida';
+
+                // The Check-Out Marker (Small Circle or Flag)
+                storeLocation = {
+                    latitude: p.lat,
+                    longitude: p.lng,
+                    nome_pdv: `SAÍDA [${storeNameToDisplay}] - ${p.time}`,
+                    code: 'CHECKOUT'
+                };
+                return {
+                    consultant: currentDayData.consultant,
+                    date: currentDayData.date,
+                    solides: {}, 
+                    storeLocation: storeLocation,
+                    distance: p.distanceFromCheckIn || 0,
+                    status: 'OK',
+                    customType: 'CHECKOUT',
+                    consultantHome: currentConsultantHome
                 };
             }
 
@@ -169,16 +242,17 @@ const PointHistoryViewer = ({
                 status: p.status === 'DEVIATION_CRITICAL' ? 'DISTANCE_ERROR' : 'OK',
                 customType: 'POINT', // Generic type
                 customColor: customColor,
-                customLineColor: customLineColor
+                customLineColor: customLineColor,
+                consultantHome: currentConsultantHome
             };
         });
-    }, [currentDayData]);
+    }, [currentDayData, currentConsultantHome, resolvedCheckIns]);
 
     // Summary Statistics Calculation
     const summaryStats = useMemo(() => {
-        if (!data) return [];
+        if (!filteredData) return [];
         const stats = {};
-        data.forEach(group => {
+        filteredData.forEach(group => {
             const name = group.consultant;
             if (!stats[name]) {
                 stats[name] = { name: name, deviations: 0, daysAnalyzed: 0 };
@@ -189,7 +263,7 @@ const PointHistoryViewer = ({
             stats[name].deviations += devCount;
         });
         return Object.values(stats).sort((a, b) => b.deviations - a.deviations);
-    }, [data]);
+    }, [filteredData]);
 
     // If no data and not client mode, show upload prompt
     if ((!data || data.length === 0) && !isClientMode) {

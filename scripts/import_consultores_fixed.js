@@ -95,17 +95,19 @@ async function run() {
         const endereco = cols[1]?.trim() || '';
         const rawLat = cols[2]?.trim();
         const rawLng = cols[3]?.trim();
+        const conta = cols[4]?.trim().toUpperCase() || 'SAMSUNG';
 
         const lat = cleanCoord(rawLat, 'lat');
         const lng = cleanCoord(rawLng, 'lng');
 
-        console.log(`Importing: ${nome} | Lat: ${lat}, Lng: ${lng}`);
+        console.log(`Importing: ${nome} | Lat: ${lat}, Lng: ${lng} | Conta: ${conta}`);
 
         const { error } = await supabase.from('consultores').insert({
             nome,
             endereco,
             latitude: lat,
-            longitude: lng
+            longitude: lng,
+            conta: conta
         });
 
         if (error) {

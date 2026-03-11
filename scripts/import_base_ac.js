@@ -27,7 +27,7 @@ const parseCoord = (value, type) => {
     if (type === 'lat' && abs <= 35) return num;
     if (type === 'lng' && abs >= 30 && abs <= 75) return num;
     let candidate = abs;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 20; i++) {
         candidate /= 10;
         const signed = num < 0 ? -candidate : candidate;
         if (type === 'lat' && signed >= -35 && signed <= 6) return signed;
@@ -70,6 +70,7 @@ async function main() {
             cidade:          row[7] ? String(row[7]).trim() : null,
             uf:              row[8] ? String(row[8]).trim() : null,
             cep:             row[9] ? String(row[9]).trim() : null,
+            conta:           row[12] ? String(row[12]).trim().toUpperCase() : 'SAMSUNG',
         };
 
         // Store cnpj separately in case we need to skip it

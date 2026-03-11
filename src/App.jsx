@@ -656,6 +656,7 @@ function App() {
             <PointHistoryViewer
               data={pointHistoryData}
               locations={locations}
+              consultantAddresses={consultantAddresses}
               selectedConsultant={pointHistorySelectedConsultant}
               setSelectedConsultant={setPointHistorySelectedConsultant}
               selectedDate={pointHistorySelectedDate}

@@ -262,12 +262,14 @@ function MapViewer({ points }) {
                                 <Marker
                                     position={{ lat: storeLat, lng: storeLng }}
                                     icon={{
-                                        path: window.google.maps.SymbolPath.CIRCLE,
-                                        scale: 6,
-                                        fillColor: '#10b981', // emerald-500
-                                        fillOpacity: 1,
-                                        strokeWeight: 1,
-                                        strokeColor: '#000000',
+                                        path: pt.customType === 'CHECKOUT' 
+                                            ? 'M 0,-1 0,1 M -1,0 1,0' // Small cross or logic for checkout
+                                            : window.google.maps.SymbolPath.CIRCLE,
+                                        scale: pt.customType === 'CHECKOUT' ? 4 : 6,
+                                        fillColor: pt.customType === 'CHECKOUT' ? '#71717a' : '#10b981', 
+                                        fillOpacity: pt.customType === 'CHECKOUT' ? 0.3 : 1,
+                                        strokeWeight: 2,
+                                        strokeColor: pt.customType === 'CHECKOUT' ? '#ffffff' : '#000000',
                                     }}
                                     onClick={() => setSelectedPoint({ ...pt, type: 'store' })}
                                 />
