@@ -3,7 +3,7 @@
  * Uses Gemini 2.5 Flash via REST API.
  */
 
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`;
 
 /**
  * Pre-processes raw audit rows to extract rich behavioral patterns.

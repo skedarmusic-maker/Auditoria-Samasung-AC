@@ -37,7 +37,7 @@ const ConsultantResumoCard = ({ item, idx, allRows, pointRows, resumosData, setR
             }));
             setExpanded(true);
         } catch (e) {
-            setError('Erro ao gerar análise. Verifique a API key.');
+            setError(e.message || 'Erro ao gerar análise. Verifique a API key.');
             console.error(e);
         } finally {
             setLoading(false);
