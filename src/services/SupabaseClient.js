@@ -6,10 +6,14 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-export const fetchLocations = async () => {
-    const { data, error } = await supabase
-        .from('locais')
-        .select('*');
+export const fetchLocations = async (conta = null) => {
+    let query = supabase.from('locais').select('*');
+    
+    if (conta) {
+        query = query.eq('conta', conta);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching locations:', error);
@@ -24,10 +28,14 @@ export const fetchLocations = async () => {
     }));
 };
 
-export const fetchConsultants = async () => {
-    const { data, error } = await supabase
-        .from('consultores')
-        .select('*');
+export const fetchConsultants = async (conta = null) => {
+    let query = supabase.from('consultores').select('*');
+
+    if (conta) {
+        query = query.eq('conta', conta);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching consultants:', error);

@@ -3,12 +3,12 @@ import { supabase } from './SupabaseClient';
 export const ReportService = {
 
     // Save a new report (Admin Only)
-    // We store the entire processed state + consultant list
-    saveReport: async (processedData, consultants, pointHistoryData = []) => {
+    saveReport: async (processedData, consultants, pointHistoryData = [], conta = 'SAMSUNG') => {
         try {
             const report = {
                 created_at: new Date(),
-                title: `Relatório Auditado - ${new Date().toLocaleString('pt-BR')}`,
+                conta: conta, // NEW FIELD
+                title: `Relatório Auditado (${conta}) - ${new Date().toLocaleString('pt-BR')}`,
                 report_data: {
                     processedData,
                     consultants,
@@ -31,17 +31,25 @@ export const ReportService = {
     },
 
     // Get the MOST RECENT report (Client Mode)
-    getLatestReport: async () => {
+    getLatestReport: async (conta = null) => {
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from('client_reports')
                 .select('*')
-                .order('created_at', { ascending: false })
-                .limit(1);
+                .order('created_at', { ascending: false });
+            
+            if (conta) {
+                query = query.eq('conta', conta);
+            }
+
+            const { data, error } = await query.limit(1);
 
             if (error) throw error;
             if (data && data.length > 0) {
-                return data[0].report_data; // Return the JSON blob directly
+                return {
+                    ...data[0].report_data,
+                    conta: data[0].conta
+                };
             }
             return null;
         } catch (error) {

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { MapPin, Navigation, AlertTriangle, Clock, Calendar, User, Search } from 'lucide-react';
+import { MapPin, Navigation, AlertTriangle, Clock, Calendar, User, Search, Upload } from 'lucide-react';
 import MapViewer from './MapViewer';
 import { calculateDistance } from '../services/GoogleMaps';
+import { FileUploader } from './FileUploader';
 
 const PointHistoryViewer = ({
     data,
@@ -193,21 +194,24 @@ const PointHistoryViewer = ({
     // If no data and not client mode, show upload prompt
     if ((!data || data.length === 0) && !isClientMode) {
         return (
-            <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-6 text-center">
-                <div className="w-24 h-24 border-2 border-dashed border-zinc-700 flex items-center justify-center rounded-full">
-                    <Navigation size={40} className="text-zinc-600" strokeWidth={1} />
+            <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-6 text-center bg-zinc-950/40 border border-zinc-800 border-dashed rounded-lg">
+                <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center border border-purple-500/20">
+                    <Upload size={32} className="text-purple-400" strokeWidth={1.5} />
                 </div>
                 <div>
-                    <p className="text-zinc-400 font-mono text-sm uppercase tracking-widest mb-2">Nenhum histórico carregado</p>
-                    <p className="text-zinc-600 font-mono text-xs">Carregue o arquivo CSV de histórico de pontos</p>
+                    <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-tighter">Histórico de Pontos</h2>
+                    <p className="text-zinc-500 text-sm max-w-md mx-auto">
+                        Suba o arquivo CSV de rastreamento para visualizar desvios e rotas no mapa geográfico.
+                    </p>
                 </div>
-                {onFileSelect && (
-                    <label className="cursor-pointer bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-purple-500 text-purple-400 px-6 py-3 text-xs font-mono uppercase tracking-widest transition-all flex items-center gap-2">
-                        <MapPin size={14} />
-                        Selecionar Arquivo CSV
-                        <input type="file" accept=".csv" className="hidden" onChange={(e) => onFileSelect(e.target.files[0])} />
-                    </label>
-                )}
+                <div className="w-full max-w-sm px-4">
+                    <FileUploader 
+                        label="UPLOAD HISTÓRICO (.CSV)" 
+                        file={pointHistoryFile} 
+                        onFileSelect={onFileSelect} 
+                        color="blue" 
+                    />
+                </div>
             </div>
         );
     }
@@ -259,6 +263,21 @@ const PointHistoryViewer = ({
                         </div>
                     ))}
                 </div>
+
+                {/* New Uploader section at the bottom of the list */}
+                {!isClientMode && (
+                    <div className="mt-auto pt-4 border-t border-zinc-800 px-1 pb-2">
+                        <div className="bg-zinc-900/40 p-3 border border-zinc-800 rounded group hover:border-zinc-700 transition-all">
+                            <h4 className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3 font-mono">Alterar Arquivo</h4>
+                            <FileUploader 
+                                label="" 
+                                file={pointHistoryFile} 
+                                onFileSelect={onFileSelect} 
+                                color="blue" 
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* COLUMN 2: DETAILS (FILTERS & LOGS) - 2 COLS */}

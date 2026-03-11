@@ -38,6 +38,9 @@ function App() {
   const [isClientMode, setIsClientMode] = useState(false)
   const [reportTitle, setReportTitle] = useState('')
 
+  // Multi-Account (Samsung / Huawei)
+  const [selectedAccount, setSelectedAccount] = useState('SAMSUNG')
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('mode') === 'client') {
@@ -47,7 +50,7 @@ function App() {
     } else {
       loadLocations()
     }
-  }, [])
+  }, [isClientMode, selectedAccount])
 
   const [pointHistoryData, setPointHistoryData] = useState([])
   const [pointHistoryFile, setPointHistoryFile] = useState(null)
@@ -96,9 +99,10 @@ function App() {
         setConsultants(report.consultants || [])
         setPointHistoryData(report.pointHistoryData || [])
         setReportTitle(report.generatedAt)
+        if (report.conta) setSelectedAccount(report.conta)
         // Load locations for map context if needed, but not strictly required if coords in data
-        fetchLocations().then(setLocations).catch(e => console.warn(e))
-        fetchConsultants().then(setConsultantAddresses).catch(e => console.warn(e))
+        fetchLocations(report.conta).then(setLocations).catch(e => console.warn(e))
+        fetchConsultants(report.conta).then(setConsultantAddresses).catch(e => console.warn(e))
       } else {
         setError('Nenhum relatório encontrado.')
       }
@@ -115,8 +119,8 @@ function App() {
     try {
       setLoading(true)
       const [locs, consults] = await Promise.all([
-        fetchLocations(),
-        fetchConsultants()
+        fetchLocations(selectedAccount),
+        fetchConsultants(selectedAccount)
       ])
       setLocations(locs)
       setConsultantAddresses(consults)
@@ -569,7 +573,11 @@ function App() {
               <ShieldCheck size={20} className="text-white transform -rotate-45" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white uppercase">Auditor<span className="text-blue-500">Samsung</span></h1>
+              <h1 className="text-xl font-bold tracking-tight text-white uppercase">
+                Auditor<span className={selectedAccount === 'HUAWEI' ? "text-red-500" : "text-blue-500"}>
+                  {selectedAccount === 'HUAWEI' ? "Huawei" : "Samsung"}
+                </span>
+              </h1>
               <p className="text-[10px] font-mono text-zinc-400 tracking-widest uppercase">Sistema de Conciliação Geográfica v1.0</p>
             </div>
           </div>
@@ -611,6 +619,28 @@ function App() {
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono">
+            {/* ACCOUNT SELECTOR (Admin only) */}
+            {!isClientMode && (
+              <div className="flex items-center bg-zinc-900 border border-zinc-800 p-0.5 rounded gap-0.5">
+                <button
+                  onClick={() => setSelectedAccount('SAMSUNG')}
+                  className={clsx("px-3 py-1 text-[10px] uppercase font-bold tracking-tighter transition-all",
+                    selectedAccount === 'SAMSUNG' ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  Samsung
+                </button>
+                <button
+                  onClick={() => setSelectedAccount('HUAWEI')}
+                  className={clsx("px-3 py-1 text-[10px] uppercase font-bold tracking-tighter transition-all",
+                    selectedAccount === 'HUAWEI' ? "bg-red-600 text-white" : "text-zinc-500 hover:text-zinc-300"
+                  )}
+                >
+                  Huawei
+                </button>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2 text-zinc-500">
               DBConnection: {locations.length > 0 ? "ONLINE" : "CONNECTING..."}
             </div>
@@ -717,7 +747,7 @@ function App() {
                         if (!confirm) return;
                         try {
                           setLoading(true);
-                          await ReportService.saveReport(processedData, consultants, pointHistoryData);
+                          await ReportService.saveReport(processedData, consultants, pointHistoryData, selectedAccount);
                           const linkUrl = window.location.origin + '?mode=client';
                           await navigator.clipboard.writeText(linkUrl);
                           alert("Relatório Enviado com sucesso!\n\nLink copiado para a área de transferência:\n" + linkUrl);
