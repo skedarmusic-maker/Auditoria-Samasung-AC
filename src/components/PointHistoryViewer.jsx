@@ -1,8 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { MapPin, Navigation, AlertTriangle, Clock, Calendar, User, Search, Upload } from 'lucide-react';
+import { MapPin, Navigation, AlertTriangle, Clock, Calendar, User, Search, Upload, FileDown, Mail } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import MapViewer from './MapViewer';
 import { calculateDistance } from '../services/GoogleMaps';
 import { FileUploader } from './FileUploader';
+
+const formatDistance = (meters) => {
+    if (meters === undefined || meters === null) return '';
+    const roundedMeters = Math.round(meters);
+    const wholeKm = Math.floor(roundedMeters / 1000);
+    const remainingMeters = roundedMeters % 1000;
+    const km = remainingMeters > 750 ? wholeKm + 1 : wholeKm;
+    
+    if (km > 0) {
+        return `${roundedMeters}m ( ${km} km )`;
+    }
+    return `${roundedMeters}m`;
+};
 
 const PointHistoryViewer = ({
     data,
@@ -265,6 +279,289 @@ const PointHistoryViewer = ({
         return Object.values(stats).sort((a, b) => b.deviations - a.deviations);
     }, [filteredData]);
 
+    const generatePDFReport = (consultantName = null) => {
+        const doc = new jsPDF();
+        let yPos = 20;
+        
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("Relatório de Exceções Geográficas (Auditoria)", 14, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const dateStr = new Date().toLocaleString('pt-BR');
+        doc.text(`Gerado em: ${dateStr}`, 14, yPos);
+        
+        if (consultantName) {
+            yPos += 7;
+            doc.setFont("helvetica", "bold");
+            doc.text(`Consultor: ${consultantName}`, 14, yPos);
+            doc.setFont("helvetica", "normal");
+        }
+        
+        yPos += 15;
+
+        // Determine which data to process
+        let targets = filteredData || [];
+        if (consultantName) {
+            targets = targets.filter(g => g.consultant === consultantName);
+        }
+
+        let hasDeviations = false;
+
+        targets.forEach(group => {
+            // Resolver os check-ins desse grupo/dia por proximidade geográfica
+            const groupCheckIns = group.points
+                .filter(p => p.status === 'CHECKIN_MARKER')
+                .map(p => {
+                    let finalStoreName = p.storeName;
+
+                    const nameLower = (finalStoreName || '').toLowerCase();
+                    const isGeneric = !finalStoreName || finalStoreName.length <= 4 || /^\d+$/.test(finalStoreName) || nameLower.includes('execução') || nameLower.includes('execucao') || nameLower.includes('tracking');
+
+                    if (isGeneric && locations && locations.length > 0) {
+                        let minInfo = { name: null, dist: 1500 };
+
+                        locations.forEach(loc => {
+                            const dist = calculateDistance(p.lat, p.lng, Number(loc.latitude), Number(loc.longitude));
+                            if (dist !== null && dist < minInfo.dist) {
+                                minInfo = { name: loc.nome_pdv || loc.bandeira, dist: dist };
+                            }
+                        });
+
+                        if (minInfo.name) {
+                            finalStoreName = minInfo.name;
+                        }
+                    }
+
+                    return { 
+                        ...p, 
+                        storeName: finalStoreName || (p.info && p.info.length > 10 ? p.info : 'Loja Desconhecida')
+                    };
+                });
+
+            // Mapear os desvios resolvendo os nomes das lojas com base nos check-ins resolvidos
+            const deviations = group.points
+                .filter(p => p.status === 'DEVIATION_CRITICAL')
+                .map(p => {
+                    const resolved = groupCheckIns.find(rc => rc.time === p.relatedCheckInTime);
+                    return {
+                        ...p,
+                        relatedStoreName: resolved?.storeName || p.relatedStoreName
+                    };
+                });
+
+            if (deviations.length === 0) return;
+
+            // Agrupar desvios por loja
+            const storeGroups = {};
+            deviations.forEach(dev => {
+                const store = dev.relatedStoreName || 'Desconhecida';
+                if (!storeGroups[store]) {
+                    storeGroups[store] = [];
+                }
+                storeGroups[store].push(dev);
+            });
+
+            Object.keys(storeGroups).forEach(store => {
+                hasDeviations = true;
+                const points = storeGroups[store];
+                
+                // Find min/max time and max distance
+                let minTime = points[0].time;
+                let maxTime = points[0].time;
+                let maxDistance = 0;
+
+                points.forEach(p => {
+                    if (p.time < minTime) minTime = p.time;
+                    if (p.time > maxTime) maxTime = p.time;
+                    if (p.distanceFromCheckIn > maxDistance) maxDistance = p.distanceFromCheckIn;
+                });
+
+                const timeStr = minTime === maxTime ? minTime : `${minTime} até as ${maxTime}`;
+                const distFormatted = formatDistance(maxDistance);
+
+                const text = `${group.consultant} > desvio no dia ${group.date} previsto para atender a loja ${store} esteve gps constando ${distFormatted} da loja entre os horarios das ${timeStr}`;
+
+                // Add bullet point
+                doc.circle(15, yPos - 1.5, 1, 'F');
+                
+                // Add to PDF, handle word wrap
+                const splitText = doc.splitTextToSize(text, 175); // 175mm width to account for bullet
+                
+                // Check page bounds
+                if (yPos + (splitText.length * 5) > 280) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.text(splitText, 18, yPos);
+                yPos += (splitText.length * 5) + 5;
+            });
+        });
+
+        if (!hasDeviations) {
+            doc.text("Nenhum desvio crítico encontrado para o filtro selecionado.", 14, yPos);
+        }
+
+        const fileName = consultantName 
+            ? `Relatorio_Desvios_${consultantName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`
+            : `Relatorio_Desvios_Geral_${new Date().toISOString().slice(0,10)}.pdf`;
+
+        doc.save(fileName);
+    };
+
+    const sendEmailReport = (consultantName) => {
+        if (!consultantName) return;
+
+        let targets = (filteredData || []).filter(g => g.consultant === consultantName);
+
+        const deviationsList = [];
+        const uniqueDates = new Set();
+
+        targets.forEach(group => {
+            const groupCheckIns = group.points
+                .filter(p => p.status === 'CHECKIN_MARKER')
+                .map(p => {
+                    let finalStoreName = p.storeName;
+                    const nameLower = (finalStoreName || '').toLowerCase();
+                    const isGeneric = !finalStoreName || finalStoreName.length <= 4 || /^\d+$/.test(finalStoreName) || nameLower.includes('execução') || nameLower.includes('execucao') || nameLower.includes('tracking');
+
+                    if (isGeneric && locations && locations.length > 0) {
+                        let minInfo = { name: null, dist: 1500 };
+                        locations.forEach(loc => {
+                            const dist = calculateDistance(p.lat, p.lng, Number(loc.latitude), Number(loc.longitude));
+                            if (dist !== null && dist < minInfo.dist) {
+                                minInfo = { name: loc.nome_pdv || loc.bandeira, dist: dist };
+                            }
+                        });
+                        if (minInfo.name) {
+                            finalStoreName = minInfo.name;
+                        }
+                    }
+
+                    return { 
+                        ...p, 
+                        storeName: finalStoreName || (p.info && p.info.length > 10 ? p.info : 'Loja Desconhecida')
+                    };
+                });
+
+            const deviations = group.points
+                .filter(p => p.status === 'DEVIATION_CRITICAL')
+                .map(p => {
+                    const resolved = groupCheckIns.find(rc => rc.time === p.relatedCheckInTime);
+                    return {
+                        ...p,
+                        relatedStoreName: resolved?.storeName || p.relatedStoreName
+                    };
+                });
+
+            if (deviations.length === 0) return;
+
+            const storeGroups = {};
+            deviations.forEach(dev => {
+                const store = dev.relatedStoreName || 'Desconhecida';
+                if (!storeGroups[store]) {
+                    storeGroups[store] = [];
+                }
+                storeGroups[store].push(dev);
+            });
+
+            Object.keys(storeGroups).forEach(store => {
+                const points = storeGroups[store];
+                let minTime = points[0].time;
+                let maxTime = points[0].time;
+                let maxDistance = 0;
+
+                points.forEach(p => {
+                    if (p.time < minTime) minTime = p.time;
+                    if (p.time > maxTime) maxTime = p.time;
+                    if (p.distanceFromCheckIn > maxDistance) maxDistance = p.distanceFromCheckIn;
+                });
+
+                const timeStr = minTime === maxTime ? minTime : `${minTime} até as ${maxTime}`;
+                const distFormatted = formatDistance(maxDistance);
+
+                uniqueDates.add(group.date);
+
+                deviationsList.push({
+                    date: group.date,
+                    store: store,
+                    distance: distFormatted,
+                    time: timeStr
+                });
+            });
+        });
+
+        if (deviationsList.length === 0) {
+            alert("Nenhum desvio crítico encontrado para este consultor.");
+            return;
+        }
+
+        const sortedDatesArray = Array.from(uniqueDates).sort((a, b) => {
+            const [d1, m1, y1] = a.split('/').map(Number);
+            const [d2, m2, y2] = b.split('/').map(Number);
+            return new Date(y1, m1 - 1, d1) - new Date(y2, m2 - 1, d2);
+        });
+
+        const formattedDatesOnly = sortedDatesArray.map(dateStr => {
+            const parts = dateStr.split('/');
+            return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : dateStr;
+        });
+
+        let datesText = '';
+        if (formattedDatesOnly.length === 1) {
+            datesText = `no dia ${formattedDatesOnly[0]}`;
+        } else if (formattedDatesOnly.length > 1) {
+            const lastDate = formattedDatesOnly.pop();
+            datesText = `nos dias ${formattedDatesOnly.join(', ')} e ${lastDate}`;
+        }
+
+        let detailsText = '';
+        deviationsList.forEach(dev => {
+            detailsText += `- No dia ${dev.date}, previsto para atender a loja "${dev.store}", o GPS registrou um desvio de ${dev.distance} entre os horários das ${dev.time}.\n\n`;
+        });
+
+        const emailMap = {
+            'alexandre': 'alexandre.lima@protrademkt.com.br',
+            'diogo': 'diogo.santos@protrademkt.com.br',
+            'tatiane': 'tatiane.souza@protrademkt.com.br',
+            'liedy': 'liedy.santos@protrademkt.com.br',
+            'luiz': 'luiz.falcao@protrademkt.com.br'
+        };
+
+        const lowerName = (consultantName || '').toLowerCase();
+        let toEmail = 'gabriel.amorim@protrademkt.com.br';
+        for (const [key, email] of Object.entries(emailMap)) {
+            if (lowerName.includes(key)) {
+                toEmail = email;
+                break;
+            }
+        }
+
+        const ccEmail = 'laryssa.teixeira@protrademkt.com.br';
+        const subject = encodeURIComponent('Alinhamento de registros de roteiro – Sistema Umov.me');
+        
+        const bodyText = `Olá,
+
+Durante a análise rotineira dos dados de GPS do sistema Umov.me, notamos algumas divergências de localização ${datesText}. O sistema registrou deslocamentos superiores a 500 metros em relação aos pontos de atendimento previstos no roteiro.
+
+Para que possamos regularizar esses registros, você poderia nos informar se nessas datas houve alguma demanda extra solicitada pela Samsung, como ações de café, treinamentos ou almoços de relacionamento?
+
+
+Detalhamento das divergências encontradas:
+
+${detailsText}
+
+Atenciosamente,
+Coordenação de Operações`;
+
+        const body = encodeURIComponent(bodyText);
+
+        window.location.href = `mailto:${toEmail}?cc=${ccEmail}&subject=${subject}&body=${body}`;
+    };
+
     // If no data and not client mode, show upload prompt
     if ((!data || data.length === 0) && !isClientMode) {
         return (
@@ -304,12 +601,22 @@ const PointHistoryViewer = ({
 
             {/* COLUMN 1: SUMMARY (CONSULTANT LIST) - 2 COLS */}
             <div className="lg:col-span-2 flex flex-col gap-4 overflow-hidden h-full border-r border-zinc-800 pr-2">
-                <div className="p-3 bg-zinc-950/20 border-b border-zinc-800 flex justify-between items-center">
-                    <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                        <User size={14} />
-                        Consultores
-                    </h3>
-                    <span className="text-[10px] text-zinc-600">{summaryStats.length}</span>
+                <div className="p-3 bg-zinc-950/20 border-b border-zinc-800">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                            <User size={14} />
+                            Consultores
+                        </h3>
+                        <span className="text-[10px] text-zinc-600">{summaryStats.length}</span>
+                    </div>
+                    <button
+                        onClick={() => generatePDFReport()}
+                        className="w-full flex items-center justify-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-900/50 hover:border-red-500/50 p-2 rounded text-[10px] uppercase font-bold tracking-widest transition-colors"
+                        title="Baixar PDF Geral com todos os desvios"
+                    >
+                        <FileDown size={14} />
+                        PDF Geral
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-zinc-700">
                     {summaryStats.map((stat, idx) => (
@@ -359,6 +666,24 @@ const PointHistoryViewer = ({
 
                 {/* FILTERS */}
                 <div className="bg-zinc-900/50 border border-zinc-800 p-4 space-y-4">
+                    {selectedConsultant && (
+                        <div className="pb-3 mb-3 border-b border-zinc-800 space-y-2">
+                            <button
+                                onClick={() => generatePDFReport(selectedConsultant)}
+                                className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 hover:border-zinc-500 p-2 rounded text-[10px] uppercase font-bold tracking-widest transition-colors"
+                            >
+                                <FileDown size={14} />
+                                Exportar PDF Individual
+                            </button>
+                            <button
+                                onClick={() => sendEmailReport(selectedConsultant)}
+                                className="w-full flex items-center justify-center gap-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 border border-blue-900/50 hover:border-blue-500/50 p-2 rounded text-[10px] uppercase font-bold tracking-widest transition-colors"
+                            >
+                                <Mail size={14} />
+                                Enviar por E-mail
+                            </button>
+                        </div>
+                    )}
                     <div>
                         <label className="text-[10px] uppercase font-bold text-zinc-500 mb-1 flex items-center gap-2">
                             <Calendar size={12} /> Data
@@ -405,7 +730,7 @@ const PointHistoryViewer = ({
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-[10px] text-red-500 font-bold">
-                                            +{Math.round(dev.distanceFromCheckIn)}m
+                                            +{formatDistance(dev.distanceFromCheckIn)}
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-zinc-500 truncate" title={dev.info}>

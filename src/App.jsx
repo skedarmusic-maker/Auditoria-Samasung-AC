@@ -534,7 +534,7 @@ function App() {
     return processedData.map(row => {
       const key = `${row.consultant}_${row.date}_${row.solides.time}`;
       if (manualApprovals[key]) {
-        return { ...row, status: 'APPROVED' };
+        return { ...row, originalStatus: row.status, status: 'APPROVED' };
       }
       return row;
     });
