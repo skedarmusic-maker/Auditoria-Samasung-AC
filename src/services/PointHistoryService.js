@@ -175,6 +175,13 @@ const processPointData = (rows) => {
         const lng = cleanPointCoord(rawLng, 'lng');
 
         if (lat && lng) {
+            const rawPrecision = findValue(row, ['precisao', 'accuracy', 'precision', 'margem']);
+            let gpsPrecision = null;
+            if (rawPrecision) {
+                const cleanPrec = String(rawPrecision).replace(/[^\d]/g, '');
+                gpsPrecision = cleanPrec ? parseInt(cleanPrec, 10) : null;
+            }
+
             const info = findValue(row, ['informacao', 'informacoes', 'informações adicionais', 'info', 'observacao', 'obs']) || '';
 
             // Try multiple common column names for Store/PDV
@@ -209,6 +216,7 @@ const processPointData = (rows) => {
                 time: (rawTime || '').trim(),
                 lat: lat,
                 lng: lng,
+                gpsPrecision: gpsPrecision,
                 info: info,
                 storeName: storeName,
                 captureType: captureType,
@@ -290,8 +298,16 @@ const processPointData = (rows) => {
                 p.checkInCoords = activeWindow.storeLocation; 
 
                 if (dist > 500) {
-                    p.isDeviation = true;
-                    p.status = 'DEVIATION_CRITICAL'; // Red
+                    // Filtro de Precisão: Se o GPS tiver precisão ruim (> 100m), descarta preliminarmente como desvio
+                    if (p.gpsPrecision !== null && p.gpsPrecision > 100) {
+                        p.status = 'IN_STORE'; // Trata como dentro do raio devido a imprecisão
+                        p.isDeviation = false;
+                        p.lowGpsAccuracy = true; // Flag informativo
+                    } else {
+                        // Candidato preliminar a desvio (será validado no debounce de spikes temporais)
+                        p.status = 'PRELIM_DEVIATION'; 
+                        p.isDeviation = true;
+                    }
                 } else {
                     p.status = 'IN_STORE'; // Green Arrow
                 }
@@ -299,6 +315,64 @@ const processPointData = (rows) => {
                 // OUTSIDE ANY VISIT (TRAVEL)
                 p.status = 'TRAVEL'; 
                 p.distanceFromCheckIn = null;
+            }
+        });
+
+        // 4. Debounce temporal para filtrar spikes isolados de desvio
+        group.points.forEach((p, idx) => {
+            if (p.status !== 'PRELIM_DEVIATION') return;
+
+            const activeWindow = windows.find(w => {
+                const tP = timeToSeconds(p.time);
+                const tStart = timeToSeconds(w.start.time);
+                const tEnd = w.end ? timeToSeconds(w.end.time) : 86400; 
+                return tP >= tStart && tP <= tEnd;
+            });
+
+            if (!activeWindow) {
+                p.status = 'TRAVEL';
+                p.isDeviation = false;
+                return;
+            }
+
+            let hasAdjacentDeviation = false;
+
+            // Vizinho anterior
+            if (idx > 0) {
+                const prevP = group.points[idx - 1];
+                const tPrev = timeToSeconds(prevP.time);
+                const tStart = timeToSeconds(activeWindow.start.time);
+                const tEnd = activeWindow.end ? timeToSeconds(activeWindow.end.time) : 86400;
+
+                if (tPrev >= tStart && tPrev <= tEnd) {
+                    if (prevP.status === 'PRELIM_DEVIATION' || prevP.status === 'DEVIATION_CRITICAL') {
+                        hasAdjacentDeviation = true;
+                    }
+                }
+            }
+
+            // Vizinho posterior
+            if (idx < group.points.length - 1) {
+                const nextP = group.points[idx + 1];
+                const tNext = timeToSeconds(nextP.time);
+                const tStart = timeToSeconds(activeWindow.start.time);
+                const tEnd = activeWindow.end ? timeToSeconds(activeWindow.end.time) : 86400;
+
+                if (tNext >= tStart && tNext <= tEnd) {
+                    if (nextP.status === 'PRELIM_DEVIATION' || nextP.status === 'DEVIATION_CRITICAL') {
+                        hasAdjacentDeviation = true;
+                    }
+                }
+            }
+
+            if (hasAdjacentDeviation) {
+                p.status = 'DEVIATION_CRITICAL'; // Confirmado como desvio real
+                p.isDeviation = true;
+            } else {
+                // Spike de GPS isolado! Ignorar
+                p.status = 'IN_STORE';
+                p.isDeviation = false;
+                p.isGpsSpike = true;
             }
         });
     });

@@ -16,12 +16,11 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseKey) { process.exit(1); }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-const csvFilePath = path.join(__dirname, '../public/locais_rows fnal março.csv');
+const csvFilePath = path.join(__dirname, '../public/locais_rows fnal.xlsx.csv');
 
 async function importData() {
     console.log(`Lendo: ${csvFilePath}`);
-    const csvFile = fs.readFileSync(csvFilePath, 'utf8');
+    const csvFile = fs.readFileSync(csvFilePath, 'latin1');
 
     Papa.parse(csvFile, {
         header: true,
@@ -31,26 +30,26 @@ async function importData() {
             let records = [];
 
             results.data.forEach(row => {
+                const cod = row.codigo_pdv || row['código_pdv'] || row['cdigo_pdv'] || row['cdigo_pdv'];
                 // skip if no code
-                if (!row.codigo_pdv || !row.codigo_pdv.trim()) return;
+                if (!cod || !cod.trim()) return;
 
                 // parse coordinates cleanly (sometimes they have weird dots like -4.632.592)
                 let lat = null;
                 let lng = null;
                 try {
                     if (row.latitude) {
-                        const strLat = String(row.latitude).replace('.', '').replace(',', '.');
-                        // Se tiver mais de um ponto ou virgula, o parseFloat já cuida de trazer pelo menos o número principal ou a gente precisa limpar melhor? 
-                        // Como era uma exportação do banco, provavelmente estão "sujas" do Excel se abertas em português e salvas de novo. 
-                        // Vamos deixar o DB resolver a coersão ou o Supabase retorna erro se mandar string errada pra numeric. 
-                        // Vou mandar como float validado.
-                        lat = parseFloat(row.latitude);
+                        const strLat = String(row.latitude).replace(/\./g, '').replace(',', '.');
+                        lat = parseFloat(strLat);
                     }
-                    if (row.longitude) lng = parseFloat(row.longitude);
+                    if (row.longitude) {
+                        const strLng = String(row.longitude).replace(/\./g, '').replace(',', '.');
+                        lng = parseFloat(strLng);
+                    }
                 } catch (e) { }
 
                 records.push({
-                    codigo_pdv: row.codigo_pdv.trim(),
+                    codigo_pdv: cod.trim(),
                     nome_pdv: row.nome_pdv || null,
                     endereco: row.endereco || null,
                     cidade: row.cidade || null,

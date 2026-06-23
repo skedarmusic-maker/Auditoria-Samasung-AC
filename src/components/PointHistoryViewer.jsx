@@ -30,6 +30,8 @@ const PointHistoryViewer = ({
     pointHistoryFile,
     onFileSelect
 }) => {
+    const [pingViewMode, setPingViewMode] = useState('deviations'); // 'deviations' | 'all'
+
     // FILTRO GLOBAL: Ignorar Sábados e Domingos
     const filteredData = useMemo(() => {
         return (data || []).filter(group => {
@@ -136,6 +138,18 @@ const PointHistoryViewer = ({
                     relatedStoreName: resolved?.storeName || p.relatedStoreName
                 };
             });
+    }, [currentDayData, resolvedCheckIns]);
+
+    // Prepare all points list with resolved store names
+    const allPoints = useMemo(() => {
+        if (!currentDayData) return [];
+        return currentDayData.points.map(p => {
+            const resolved = resolvedCheckIns.find(rc => rc.time === p.relatedCheckInTime);
+            return {
+                ...p,
+                relatedStoreName: resolved?.storeName || p.relatedStoreName
+            };
+        });
     }, [currentDayData, resolvedCheckIns]);
 
     // Prepare check-ins list for sidebar
@@ -708,36 +722,120 @@ Coordenação de Operações`;
 
                 {/* ALERTS / DEVIATIONS */}
                 <div className="flex-1 bg-zinc-900 border border-zinc-800 flex flex-col overflow-hidden">
-                    <div className="p-3 bg-red-950/20 border-b border-red-900/30 flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
-                            <AlertTriangle size={14} />
-                            Desvios ({deviations.length})
-                        </h3>
+                    <div className="p-3 bg-zinc-950/20 border-b border-zinc-800 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle size={14} className="text-zinc-400" />
+                            <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Pings do Dia</span>
+                        </div>
+                        <div className="flex bg-zinc-900 p-0.5 rounded border border-zinc-800 text-[10px]">
+                            <button
+                                onClick={() => setPingViewMode('deviations')}
+                                className={`px-2 py-0.5 rounded transition-colors uppercase font-mono ${pingViewMode === 'deviations' ? 'bg-red-950/45 text-red-400 font-bold border border-red-900/30' : 'text-zinc-500 hover:text-zinc-350'}`}
+                            >
+                                Desvios ({deviations.length})
+                            </button>
+                            <button
+                                onClick={() => setPingViewMode('all')}
+                                className={`px-2 py-0.5 rounded transition-colors uppercase font-mono ${pingViewMode === 'all' ? 'bg-blue-950/45 text-blue-400 font-bold border border-blue-900/30' : 'text-zinc-500 hover:text-zinc-350'}`}
+                            >
+                                Todos ({currentDayData?.points?.length || 0})
+                            </button>
+                        </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-zinc-700">
-                        {deviations.length === 0 ? (
-                            <div className="text-center p-8 text-zinc-600 text-xs">
-                                Nenhum desvio
-                            </div>
-                        ) : (
-                            deviations.map((dev, idx) => (
-                                <div key={idx} className="bg-red-950/10 border border-red-900/30 p-2 rounded hover:bg-red-900/20 transition-colors">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="text-red-300 font-mono font-bold text-xs">{dev.time}</span>
-                                        <span className="text-[10px] text-zinc-500 truncate max-w-[80px]" title={dev.relatedStoreName}>
-                                            {dev.relatedStoreName || 'Desc.'}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-[10px] text-red-500 font-bold">
-                                            +{formatDistance(dev.distanceFromCheckIn)}
-                                        </span>
-                                    </div>
-                                    <p className="text-[10px] text-zinc-500 truncate" title={dev.info}>
-                                        {dev.info || 'Sem informações'}
-                                    </p>
+                        {pingViewMode === 'deviations' ? (
+                            deviations.length === 0 ? (
+                                <div className="text-center p-8 text-zinc-600 text-xs">
+                                    Nenhum desvio
                                 </div>
-                            ))
+                            ) : (
+                                deviations.map((dev, idx) => (
+                                    <div key={idx} className="bg-red-950/10 border border-red-900/30 p-2 rounded hover:bg-red-900/20 transition-colors">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-red-300 font-mono font-bold text-xs">{dev.time}</span>
+                                            <span className="text-[10px] text-zinc-500 truncate max-w-[80px]" title={dev.relatedStoreName}>
+                                                {dev.relatedStoreName || 'Desc.'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] text-red-500 font-bold">
+                                                +{formatDistance(dev.distanceFromCheckIn)}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-zinc-500 truncate" title={dev.info}>
+                                            {dev.info || 'Sem informações'}
+                                        </p>
+                                    </div>
+                                ))
+                            )
+                        ) : (
+                            allPoints.length === 0 ? (
+                                <div className="text-center p-8 text-zinc-600 text-xs">
+                                    Nenhum ping registrado
+                                </div>
+                            ) : (
+                                allPoints.map((p, idx) => {
+                                    let bgClass = "bg-zinc-900/30 border border-zinc-800";
+                                    let textClass = "text-zinc-400";
+                                    let distText = "";
+                                    let statusLabel = "Viagem";
+                                    
+                                    if (p.status === 'DEVIATION_CRITICAL') {
+                                        bgClass = "bg-red-950/10 border border-red-900/30 hover:bg-red-900/20";
+                                        textClass = "text-red-300";
+                                        statusLabel = "Desvio";
+                                        distText = `+${formatDistance(p.distanceFromCheckIn)}`;
+                                    } else if (p.isGpsSpike) {
+                                        bgClass = "bg-amber-950/10 border border-amber-900/20 hover:bg-amber-900/10";
+                                        textClass = "text-amber-300";
+                                        statusLabel = "Oscilação GPS";
+                                        distText = `+${formatDistance(p.distanceFromCheckIn)}`;
+                                    } else if (p.lowGpsAccuracy) {
+                                        bgClass = "bg-amber-950/5 border border-amber-900/15 hover:bg-amber-900/10";
+                                        textClass = "text-amber-300/80";
+                                        statusLabel = "Sinal Ruim";
+                                        distText = `+${formatDistance(p.distanceFromCheckIn)}`;
+                                    } else if (p.status === 'IN_STORE') {
+                                        bgClass = "bg-emerald-950/5 border border-emerald-900/20 hover:bg-emerald-900/10";
+                                        textClass = "text-emerald-300";
+                                        statusLabel = "Na Loja";
+                                        distText = formatDistance(p.distanceFromCheckIn);
+                                    } else if (p.status === 'CHECKIN_MARKER') {
+                                        bgClass = "bg-emerald-900/10 border border-emerald-500/30 hover:bg-emerald-900/25";
+                                        textClass = "text-emerald-400";
+                                        statusLabel = "Check-In";
+                                    } else if (p.status === 'CHECKOUT_MARKER') {
+                                        bgClass = "bg-emerald-950/10 border border-emerald-900/30 hover:bg-emerald-950/20";
+                                        textClass = "text-emerald-400";
+                                        statusLabel = "Check-Out";
+                                        distText = formatDistance(p.distanceFromCheckIn);
+                                    }
+
+                                    return (
+                                        <div key={idx} className={`${bgClass} p-2 rounded transition-colors`}>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className={`${textClass} font-mono font-bold text-xs`}>{p.time}</span>
+                                                <span className="text-[9px] text-zinc-500 truncate max-w-[80px]" title={p.relatedStoreName || p.storeName}>
+                                                    {p.relatedStoreName || p.storeName || ''}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px]">
+                                                <span className="text-zinc-400 font-mono text-[9px] uppercase">{statusLabel}</span>
+                                                {distText && (
+                                                    <span className={`${p.status === 'DEVIATION_CRITICAL' ? 'text-red-500 font-bold' : 'text-emerald-500'}`}>
+                                                        {distText}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {p.info && (
+                                                <p className="text-[10px] text-zinc-500 truncate mt-0.5" title={p.info}>
+                                                    {p.info}
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )
                         )}
                     </div>
                 </div>
