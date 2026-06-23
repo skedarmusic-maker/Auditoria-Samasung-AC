@@ -51,7 +51,7 @@ const PointHistoryViewer = ({
         return filteredData
             .filter(d => d.consultant === selectedConsultant)
             .map(d => {
-                const hasWarning = d.points.some(p => p.distanceFromCheckIn > 900);
+                const hasWarning = d.points.some(p => p.status === 'DEVIATION_CRITICAL');
                 return {
                     date: d.date,
                     hasWarning: hasWarning
