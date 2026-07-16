@@ -144,7 +144,7 @@ const processPointData = (rows) => {
 
     rows.forEach(row => {
         const date = findValue(row, ['data', 'data prevista', 'data planejada']);
-        const consultant = findValue(row, ['consultor', 'usuario', 'colaborador', 'nome', 'funcionario']);
+        const consultant = findValue(row, ['consultor', 'usuario', 'colaborador', 'nome', 'funcionario', 'pagination']);
         const rawTime = findValue(row, ['hora', 'horario', 'horário', 'time']);
 
         if (!date || !consultant) return;
