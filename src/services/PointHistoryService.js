@@ -7,6 +7,7 @@ export const PointHistoryService = {
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
+                delimiter: ';', // Semicolon delimiter (standard in Brazil)
                 encoding: 'ISO-8859-1', // Better for Brazilian CSVs/Excel
                 transformHeader: (h) => h.trim(),
                 complete: (results) => {
